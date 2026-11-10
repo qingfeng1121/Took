@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://took.app/schema/completion.schema.json",
+  "title": "Completion",
+  "description": "打卡：一个周期一行，作用于该周期内全部命中日。主键 (task_id, period_start) —— 同一周期内所有命中日共享同一个完成状态。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "period_start",
+    "status",
+    "rev",
+    "updated_at",
+    "deleted",
+    "dirty"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "外键指向 task.id"
+    },
+    "period_start": {
+      "$ref": "#/$defs/dateKey",
+      "description": "周期标识，由规则的 periodStartOf 算出：weekly=该周周一；every=起始日 + ⌊天数/N⌋·N；monthly/yearly/none=当天。"
+    },
+    "status": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "description": "0=未完成 1=已完成"
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "毫秒时间戳"
+    },
+    "deleted": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0,
+      "description": "软删，永不物理删除"
+    },
+    "dirty": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    }
+  },
+  "$defs": {
+    "dateKey": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+    }
+  }
+}

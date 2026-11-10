@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「倒数日」组件的声明（第三个 Glance 组件，与「今天」「月历」并存）。
+
+  **一个组件实例 = 一个倒数日**。minWidth/minHeight 就是 2×2 的 dp
+  （系统对 1 格 ≈ 40dp，2 格 ≈ 110dp）：用户 2026-10-26 明确要求
+  「2×2 只能显示一个倒数日」，所以最小尺寸直接钉在 2×2，
+  不再允许缩到 1×1 那种连标题都放不下的格子。
+  resizeMode 仍为 horizontal|vertical + minResize 保底：2×4 也正常显示
+  （留白更多、数字更大，**不塞更多条**）。
+
+  android:configure 指向 CountdownWidgetConfigActivity：
+  第一次拖到桌面时系统先拉起选择页，用户选一条才落位；
+  长按组件 → 重新配置 走同一个 Activity（Glance 的 reconfigure 同一入口）。
+  没有它就只能「全塞进去」——那正是本轮要返工的东西。
+
+  widgetFeatures="reconfigurable"：Android 12+ 的桌面靠这一位决定「长按 → 重新配置」
+  能不能出现。缺了它，同一个 configure Activity 只能在**首次添加**时弹出，
+  之后用户就再也改不了这个实例绑的是哪条 —— 而「换一条」正是本组件的核心交互。
+
+  targetCellWidth/Height = 2x2：第一次拖到桌面时的默认大小。
+
+  updatePeriodMillis=1800000（30 分钟）：系统那条低保证刷新；
+  跨天那一次由 WidgetTickScheduler 在本地零点排的一次性闹钟兜住
+  （与另外两个组件共用同一个闹钟，不重复排）。
+
+  widgetCategory=home_screen 必须显式声明：桌面（Launcher）按这个分类
+  决定组件出现在「小部件」列表的哪一栏，缺了它在部分 ROM 上根本不列出。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="app.took.countdownwidget.CountdownWidgetConfigActivity"
+    android:description="@string/widget_countdown_description"
+    android:initialLayout="@layout/countdown_widget_loading"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:previewLayout="@layout/countdown_widget_preview"
+    android:previewImage="@drawable/countdown_widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

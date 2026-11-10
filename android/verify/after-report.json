@@ -1,0 +1,322 @@
+[
+ {
+  "screen": "home",
+  "note": "首页月历 + 今日条 + 底部 tab",
+  "nodes": 287,
+  "flags": [
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "~首页",
+    "box": [
+     151,
+     2215,
+     209,
+     2273
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "首页",
+    "box": [
+     136,
+     2281,
+     225,
+     2356
+    ]
+   }
+  ]
+ },
+ {
+  "screen": "daypanel",
+  "note": "当天打卡面板（右侧抽屉，水平滑入）",
+  "nodes": 12,
+  "flags": []
+ },
+ {
+  "screen": "config",
+  "note": "配置页规则列表",
+  "nodes": 58,
+  "flags": [
+   {
+    "kind": "OFFCENTER",
+    "label": "配置",
+    "box": [
+     50,
+     121,
+     721,
+     209
+    ],
+    "dx": -0.404,
+    "click": false
+   },
+   {
+    "kind": "OFFCENTER",
+    "label": "每年 3 月 15 日 · 自 2026-01-01",
+    "box": [
+     72,
+     505,
+     691,
+     697
+    ],
+    "dx": -0.237,
+    "click": false
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "~首页",
+    "box": [
+     151,
+     2215,
+     209,
+     2273
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "首页",
+    "box": [
+     136,
+     2281,
+     225,
+     2356
+    ]
+   }
+  ]
+ },
+ {
+  "screen": "config-memo",
+  "note": "配置页 memo 分组（空状态居中）",
+  "nodes": 46,
+  "flags": [
+   {
+    "kind": "OFFCENTER",
+    "label": "配置",
+    "box": [
+     50,
+     121,
+     721,
+     209
+    ],
+    "dx": -0.404,
+    "click": false
+   },
+   {
+    "kind": "INVISIBLE",
+    "label": "每周一、二、三、四、五 · 自 2026-10-01",
+    "box": [
+     72,
+     225,
+     685,
+     247
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "~首页",
+    "box": [
+     151,
+     2215,
+     209,
+     2273
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "首页",
+    "box": [
+     136,
+     2281,
+     225,
+     2356
+    ]
+   }
+  ]
+ },
+ {
+  "screen": "countdown",
+  "note": "倒数日表单（右侧滑入）",
+  "nodes": 26,
+  "flags": [
+   {
+    "kind": "OFFCENTER",
+    "label": "~备注",
+    "box": [
+     72,
+     1188,
+     1009,
+     1430
+    ],
+    "dx": -0.411,
+    "click": true
+   }
+  ]
+ },
+ {
+  "screen": "doc-note",
+  "note": "记事文档式页",
+  "nodes": 18,
+  "flags": []
+ },
+ {
+  "screen": "doc-book",
+  "note": "笔记本文档式页",
+  "nodes": 18,
+  "flags": []
+ },
+ {
+  "screen": "editor",
+  "note": "规则编辑页顶部",
+  "nodes": 56,
+  "flags": [
+   {
+    "kind": "INVISIBLE",
+    "label": "~＋ 添加任务",
+    "box": [
+     33,
+     2135,
+     1048,
+     2169
+    ]
+   },
+   {
+    "kind": "INVISIBLE",
+    "label": "＋ 添加任务",
+    "box": [
+     403,
+     2147,
+     679,
+     2169
+    ]
+   }
+  ]
+ },
+ {
+  "screen": "editor-reminder",
+  "note": "规则编辑页提醒区三按钮",
+  "nodes": 57,
+  "flags": [
+   {
+    "kind": "OFFCENTER",
+    "label": "3",
+    "box": [
+     191,
+     235,
+     522,
+     367
+    ],
+    "dx": -0.445,
+    "click": true
+   },
+   {
+    "kind": "OFFCENTER",
+    "label": "15",
+    "box": [
+     683,
+     235,
+     1015,
+     367
+    ],
+    "dx": -0.404,
+    "click": true
+   }
+  ]
+ },
+ {
+  "screen": "settings",
+  "note": "设置页",
+  "nodes": 37,
+  "flags": [
+   {
+    "kind": "OFFCENTER",
+    "label": "http://127.0.0.1:8420",
+    "box": [
+     72,
+     542,
+     1008,
+     700
+    ],
+    "dx": -0.149,
+    "click": true
+   },
+   {
+    "kind": "OFFCENTER",
+    "label": "Failed to connect to /127.0.0.1:8420",
+    "box": [
+     279,
+     1286,
+     1008,
+     1478
+    ],
+    "dx": 0.187,
+    "click": false
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "通知",
+    "box": [
+     72,
+     2070,
+     175,
+     2167
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "~首页",
+    "box": [
+     151,
+     2215,
+     209,
+     2273
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "首页",
+    "box": [
+     136,
+     2281,
+     225,
+     2356
+    ]
+   }
+  ]
+ },
+ {
+  "screen": "settings-2",
+  "note": "设置页下半",
+  "nodes": 40,
+  "flags": [
+   {
+    "kind": "INVISIBLE",
+    "label": "上面每一行都是 AlarmManager 里真实注册的那一次（表 reminder_schedule）。响过一次之后自动排下一次；贪睡会把这一行的时间往后推并累计次数。snooze_min = 0 表示不贪睡，闹钟上就不会出现「稍后提醒」。",
+    "box": [
+     44,
+     2185,
+     1036,
+     2193
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "~首页",
+    "box": [
+     151,
+     2215,
+     209,
+     2273
+    ]
+   },
+   {
+    "kind": "BOTTOM-LEFT",
+    "label": "首页",
+    "box": [
+     136,
+     2281,
+     225,
+     2356
+    ]
+   }
+  ]
+ }
+]

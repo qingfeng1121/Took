@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  通知栏小图标。系统只取它的 **alpha 通道**并统一染成白色（Android 5+），
+  所以这里必须是纯白单色、不能有彩色 —— 带彩色的小图标会显示成一个白方块。
+  形状与启动图标同构（圆环 + 中心点），24dp 网格。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.2" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,12 m-2.6,0 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+</vector>

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://took.app/schema/task.schema.json",
+  "title": "Task",
+  "description": "任务：只是规则下的一个名字。同一规则下可挂多个任务，它们共享重复与提醒，但各自独立打卡。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "rule_id",
+    "title",
+    "rev",
+    "updated_at",
+    "deleted",
+    "dirty"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rule_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "外键指向 rule.id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort_order": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deleted": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    },
+    "dirty": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    }
+  }
+}

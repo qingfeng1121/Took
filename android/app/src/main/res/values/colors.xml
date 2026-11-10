@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      启动图标底色 = TookColors.countdownBg（Theme.kt: Color(0xFF1F2329)），
+      也就是 App 内倒数日深色卡的底色。前景的橙色圆环取 TookColors.accent（0xFFF97316）。
+    -->
+    <color name="ic_launcher_background">#1F2329</color>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_title">今天</string>
+    <string name="widget_today_description">今天要做的任务，点一下打开 Took</string>
+    <string name="widget_today_loading">读取中…</string>
+    <string name="widget_today_preview_summary">1/3 未完成</string>
+    <string name="widget_today_preview_row1">○ 背单词</string>
+    <string name="widget_today_preview_row2">○ 早起</string>
+    <string name="widget_today_preview_row3">● 健身</string>
+
+    <!-- 月历组件 -->
+    <string name="widget_month_title">月历</string>
+    <string name="widget_month_description">整个月历上桌面，点某天直接打卡</string>
+    <string name="widget_month_loading">读取中…</string>
+    <string name="widget_month_preview_title">2026 年 10 月</string>
+    <string name="widget_pin_month_unavailable">这个桌面不支持自动添加，请长按桌面 → 小部件 → 找到「月历」</string>
+
+    <!-- 倒数日组件（第三个 Glance 组件，与「今天」「月历」并存） -->
+    <string name="widget_countdown_title">倒数日</string>
+    <string name="widget_countdown_description">最近的倒数日上桌面，超大天数一眼看到</string>
+    <string name="widget_countdown_loading">读取中…</string>
+    <string name="widget_countdown_preview_title">在一起</string>
+    <string name="widget_countdown_preview_number">365</string>
+    <string name="widget_countdown_preview_date">2027.2.6</string>
+    <string name="widget_pin_countdown_unavailable">这个桌面不支持自动添加，请长按桌面 → 小部件 → 找到「倒数日」</string>
+</resources>

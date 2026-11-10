@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-density="standard">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tool · 周期打卡日历</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 没有顶部品牌条：功能按钮在日历头部（.cal-head 中间的操作区），
+       日历本身无边贴满整个窗口（.stage padding 0 + .cal 无圆角/边框/阴影/白底）。 -->
+  <main class="stage">
+    <section class="cal" id="calCard" aria-label="月历">
+      <div class="cal-head">
+        <div class="cal-title">
+          <h1 id="calTitle">— 年 — 月</h1>
+          <p id="calSub">加载中…</p>
+        </div>
+
+        <!-- 功能按钮组：固定方式 / 新建与管理 / 统计分析 / 收起 / 设置（从顶栏移进来，红框那块空白）
+             2026-10-27 按用户要求删掉「配置」——它和「新建与管理」都是打开同一个管理页，
+             功能重复；#btnNew 是唯一入口。
+             2026-10-27 加 #btnPin：用户原话「在设置旁边添加一个固定按钮，不要进入设置才能固定
+             这样麻烦了」。点它就地弹出三项菜单（贴桌面壁纸 / 置顶窗口 / 普通窗口），
+             不用进设置页；按钮上的文字就是当前固定方式。 -->
+        <div class="cal-acts" id="calActs" role="group" aria-label="功能">
+          <button class="tool" id="btnPin" type="button" aria-haspopup="menu" aria-expanded="false"
+                  title="固定方式 · 点一下直接切（贴桌面壁纸 / 置顶窗口 / 普通窗口）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 17v5"/>
+              <path d="M9 4h6l-1 6 3 3v1H7v-1l3-3-1-6Z"/>
+            </svg>
+            <span class="lbl" id="btnPinLbl">普通</span>
+          </button>
+          <button class="tool" id="btnNew" type="button" title="新建与管理 · 打开规则与任务管理页">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span class="lbl">新建与管理</span>
+          </button>
+          <button class="tool" id="btnAnalysis" type="button" title="统计分析">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 20V4"/><rect x="7.6" y="12.4" width="3.4" height="5.2" rx="1"/>
+              <rect x="13.4" y="8.6" width="3.4" height="9" rx="1"/><path d="M3.2 20h17.6"/>
+            </svg>
+            <span class="lbl">统计分析</span>
+          </button>
+          <button class="tool" id="btnCollapse" type="button" title="收起 · 贴边只留一个小三角（展开点小三角）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 5l-7 7 7 7"/>
+            </svg>
+            <span class="lbl">收起</span>
+          </button>
+          <button class="tool icon" id="btnSettings" type="button" aria-label="设置" title="设置">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3.1"/>
+        <path d="M19.4 14.5a1.6 1.6 0 0 0 .32 1.77l.06.06a1.95 1.95 0 1 1-2.76 2.76l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a1.95 1.95 0 1 1-3.9 0v-.1a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a1.95 1.95 0 1 1-2.76-2.76l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a1.95 1.95 0 1 1 0-3.9h.1a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06A1.95 1.95 0 1 1 6.95 4.7l.06.06a1.6 1.6 0 0 0 1.77.32H8.9a1.6 1.6 0 0 0 .97-1.47V3a1.95 1.95 0 1 1 3.9 0v.1a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a1.95 1.95 0 1 1 2.76 2.76l-.06.06a1.6 1.6 0 0 0-.32 1.77v.08a1.6 1.6 0 0 0 1.47.97H21a1.95 1.95 0 1 1 0 3.9h-.1a1.6 1.6 0 0 0-1.5.97Z"/>
+      </svg>
+          </button>
+        </div>
+
+        <!-- 固定方式的小菜单：**故意放在 #calActs 之外**，锚在 #btnPin 下方就地弹出
+             （position:fixed，坐标由 app.js 按按钮的真实矩形算），不是模态框。
+             放外面还有一条硬理由：#calActs 里的 button 数量是既有回归断言的口径，
+             菜单项也是真 button，混进去会把「按钮组恰好 5 个」这条断言搅乱。 -->
+        <div class="pin-menu" id="pinMenu" role="menu" aria-label="固定方式" hidden>
+          <button type="button" role="menuitemradio" data-pin="wallpaper" aria-checked="false">
+            <span class="pm-name">贴桌面壁纸</span><span class="pm-sub">按 Win+D 也留在壁纸上</span>
+          </button>
+          <button type="button" role="menuitemradio" data-pin="top" aria-checked="false">
+            <span class="pm-name">置顶窗口</span><span class="pm-sub">始终压在其他窗口之上</span>
+          </button>
+          <button type="button" role="menuitemradio" data-pin="normal" aria-checked="false">
+            <span class="pm-name">普通窗口</span><span class="pm-sub">不贴壁纸、不置顶</span>
+          </button>
+        </div>
+
+        <div class="cal-nav">
+          <button class="nav-btn" id="prevBtn" type="button" aria-label="上个月">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="pill-btn" id="todayBtn" type="button">回到今天</button>
+          <button class="nav-btn" id="nextBtn" type="button" aria-label="下个月">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="week-head" id="weekHead"></div>
+      <div class="grid" id="grid" role="grid" aria-label="月历滚动区（连续周，可滚轮 / 拖动）"></div>
+
+      <div class="legend">
+        <b><i class="l-done"></i>已完成</b>
+        <b><i class="l-todo"></i>未完成</b>
+        <span class="tip">滚轮 / 触控板 / 拖动连续滚动 · 点日期打开当天打卡 · 打卡一次，整个周期内所有命中日同步</span>
+        <b id="sourceTag" class="src">数据源：—</b>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       管理页（整页覆盖层：左导航 + 右内容）—— T3，实现在 mgr.js
+       左导航四分类：规则 / 记事 / 倒数日 / 笔记本；右上角「完成」关闭回月历；
+       右下角 FAB 随当前分类新建对应类型。
+       #configNav / #configMain 仍是 app.js 的输出口（它继续往里写自己的标记），
+       新的管理页写进 #configMain 的 #mgrRoot，旧标记由 style.css 末尾的规则隐掉。
+       ======================================================================= -->
+  <section class="screen" id="configScreen" hidden aria-label="管理">
+    <div class="screen-head">
+      <button class="icon-btn" id="configBack" type="button" aria-label="返回月历" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2 id="mgrTitle">规则</h2>
+      <span class="sub" id="mgrSub">点行编辑基础条件；点左侧箭头展开任务</span>
+      <div style="flex:1"></div>
+      <button class="btn" id="configDone" type="button">完成</button>
+    </div>
+    <div class="set-body">
+      <nav class="set-nav mgr-nav" id="mgrNav" aria-label="管理分类"></nav>
+      <nav class="set-nav" id="configNav" hidden aria-label="配置分类（app.js 的输出口，视觉隐藏）"></nav>
+      <div class="set-main" id="configMain"></div>
+    </div>
+    <button class="fab" id="mgrFab" type="button" aria-label="新建" title="新建">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- 管理页的编辑弹窗（新建 / 编辑任务、记事、倒数日、笔记本） -->
+  <div class="mask" id="mgrMask" hidden>
+    <div class="fsheet" role="dialog" aria-modal="true" aria-labelledby="mgrDlgTitle">
+      <div class="fsheet-head">
+        <h3 id="mgrDlgTitle">—</h3>
+        <button class="sheet-close" id="mgrDlgClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+               stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+      <div class="fsheet-body" id="mgrDlgBody"></div>
+      <div class="fsheet-foot" id="mgrDlgFoot"></div>
+    </div>
+  </div>
+
+  <!-- 管理页自己的二次确认（删除任务 / 删除 memo） -->
+  <div class="mask" id="mgrConfirmMask" hidden>
+    <div class="confirm" role="dialog" aria-modal="true" aria-labelledby="mgrConfirmTitle">
+      <h4 id="mgrConfirmTitle">确认</h4>
+      <p id="mgrConfirmText"></p>
+      <div class="confirm-actions">
+        <button class="btn" id="mgrConfirmCancel" type="button">取消</button>
+        <button class="btn primary" id="mgrConfirmOk" type="button">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       记事 / 笔记本的「文档式全屏页」（照 prototype/pc.html 的 #bookScreen）：
+       顶栏（返回 + 记事的日期区间 / 笔记本的分类 chip + 删除）+ 大号标题 + 元信息 + 无边框正文。
+       记事与笔记本共用这一套；倒数日走普通表单，不进这里。
+       ======================================================================= -->
+  <section class="screen book-screen" id="bookScreen" hidden aria-label="记事 / 笔记本编辑">
+    <div class="be-top">
+      <button class="icon-btn" id="bookBack" type="button" aria-label="返回列表" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="be-range" id="bookRange" hidden>
+        <input class="inp" id="bookStart" type="date" aria-label="开始日期" />
+        <span class="be-tilde">~</span>
+        <input class="inp" id="bookEnd" type="date" aria-label="结束日期" />
+      </div>
+      <div style="flex:1"></div>
+      <button class="be-chip" id="bookCat" type="button" aria-haspopup="dialog" aria-expanded="false" hidden>未分类</button>
+      <!-- ② 笔记更多菜单（右上角「⋯」）：重命名分类 / 删除。删除复用下面既有 #bookDel 的确认流程 -->
+      <div class="be-more" id="bookMoreWrap">
+        <button class="icon-btn" id="bookMore" type="button" aria-label="更多操作" title="更多"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="bookMenu">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+        </button>
+        <div class="be-menu" id="bookMenu" role="menu" hidden>
+          <button type="button" role="menuitem" data-bmenu="rename" id="bookMenuRename">重命名</button>
+          <div class="be-menu-rename" id="bookRenameRow" hidden>
+            <input class="inp" id="bookRenameInput" maxlength="20" placeholder="分类名，最多 20 字" aria-label="新分类名" />
+            <div class="be-menu-acts">
+              <button class="btn sm primary" id="bookRenameOk" type="button">确定</button>
+              <button class="btn sm" id="bookRenameCancel" type="button">取消</button>
+            </div>
+            <div class="be-menu-hint" id="bookRenameHint" hidden></div>
+          </div>
+          <button type="button" role="menuitem" class="danger" data-bmenu="del" id="bookMenuDel">删除</button>
+        </div>
+      </div>
+      <button class="icon-btn" id="bookDel" type="button" aria-label="删除" title="删除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+    <div class="be-scroll">
+      <div class="be-doc">
+        <div class="be-title" id="bookTitle" contenteditable="true" role="textbox" aria-label="标题" data-ph="标题" spellcheck="false"></div>
+        <div class="be-meta"><span id="bookTime">—</span><i class="be-meta-dot">｜</i><span id="bookWords">0 字</span>
+          <span class="be-saved" id="bookSaved"></span>
+          <!-- ③ 思维笔记：正文为空 → 禁用（照原型）；有正文 → 可点，把正文层级转成导图视图 -->
+          <button class="be-think" id="bookThink" type="button" disabled
+                  title="正文为空时没有可转换的内容">≡ 创建思维笔记</button></div>
+        <textarea class="be-body" id="bookBody" placeholder="开始书写…" aria-label="正文"></textarea>
+      </div>
+      <!-- ③ 思维导图视图：点「创建思维笔记」后替换正文区（可返回正文），不是假按钮 -->
+      <div class="think-view" id="bookThinkView" hidden>
+        <div class="think-head">
+          <b id="bookThinkTitle">思维笔记</b>
+          <span class="think-sub" id="bookThinkSub">—</span>
+          <button class="btn sm" id="bookThinkBack" type="button">返回正文</button>
+        </div>
+        <div class="think-canvas" id="bookThinkCanvas"></div>
+      </div>
+    </div>
+
+    <!-- 分类选择层（浮在编辑页上，不跳页）：切换分类 / 新建分类 -->
+    <div class="book-picker-mask" id="bookPickerMask" hidden>
+      <div class="book-picker" role="dialog" aria-modal="true" aria-labelledby="bookPickerTitle">
+        <div class="book-picker-head" id="bookPickerTitle">选择分类</div>
+        <div class="book-picker-list" id="bookPickerList"></div>
+        <!-- ④ 新建分类：点「＋ 新建分类」才展开输入框（确定 / 取消），收起时只留一个按钮。
+             #bookNewCat / #bookNewCatBtn 这两个 id 是 app.js 在启动时就绑定的，必须留在 DOM 里。 -->
+        <div class="book-picker-new" id="bookPickerNew">
+          <button class="book-picker-newbtn" id="bookNewCatOpen" type="button">＋ 新建分类</button>
+          <div class="book-picker-newform" id="bookNewCatForm" hidden>
+            <input class="inp" id="bookNewCatInput" maxlength="20" placeholder="新分类名，最多 20 字" aria-label="新分类名" />
+            <div class="book-picker-acts">
+              <button class="btn sm primary" id="bookNewCatBtn" type="button">确定</button>
+              <button class="btn sm" id="bookNewCatCancel" type="button">取消</button>
+            </div>
+            <div class="book-picker-hint" id="bookNewCatHint" hidden></div>
+          </div>
+          <!-- app.js 在启动时按 id 绑定了它（读 .value、回车点按钮），所以这个 id 必须留着 -->
+          <input type="hidden" id="bookNewCat" value="" aria-hidden="true" tabindex="-1" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 倒数日的普通表单（浮层）：标题 + 目标日 + 备注 -->
+  <div class="mask" id="memoMask" hidden>
+    <div class="fsheet" role="dialog" aria-modal="true" aria-labelledby="memoTitle">
+      <div class="fsheet-head">
+        <h3 id="memoTitle">新建倒数日</h3>
+        <button class="sheet-close" id="memoClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+               stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+      <div class="fsheet-body" id="memoBody"></div>
+      <div class="fsheet-foot" id="memoFoot"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       规则表单（浮层）：新建 / 编辑；视觉照 prototype/pc.html 的规则编辑器
+       ======================================================================= -->
+  <div class="mask" id="formMask" hidden>
+    <div class="fsheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+      <div class="fsheet-head">
+        <h3 id="formTitle">新建规则</h3>
+        <button class="sheet-close" id="formClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+               stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+      <div class="fsheet-body" id="formBody"></div>
+      <div class="fsheet-foot" id="formFoot"></div>
+    </div>
+  </div>
+
+  <!-- 全局确认框：裂开确认 / 删除确认共用（禁止 window.confirm，WebView2 会阻塞） -->
+  <div class="mask" id="confirmMask" hidden>
+    <div class="confirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h4 id="confirmTitle">确认</h4>
+      <p id="confirmText"></p>
+      <div class="confirm-actions">
+        <button class="btn" id="confirmCancel" type="button">取消</button>
+        <button class="btn primary" id="confirmOk" type="button">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       统计分析（整页覆盖层）：本轮先接入口。页面数字全部来自本地库现算，
+       区间筛选 / 图表 / 导出 明确标注「开发中」，不做点了没反应的假按钮。
+       ======================================================================= -->
+  <section class="screen" id="analysisScreen" hidden aria-label="统计分析">
+    <div class="screen-head">
+      <button class="icon-btn" id="analysisBack" type="button" aria-label="返回月历" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2>统计分析</h2>
+      <span class="sub" id="anSub">按周期统计，一个周期只计一次</span>
+      <div style="flex:1"></div>
+      <div class="an-tools">
+        <div class="seg an-seg" id="anRangeSeg" role="group" aria-label="时间范围"></div>
+        <div class="an-dd" id="anTypeDd">
+          <button type="button" class="tool an-dd-btn" id="anTypeBtn"
+                  aria-haspopup="listbox" aria-expanded="false" aria-controls="anTypePanel">
+            <span class="an-dd-k">统计类型</span>
+            <b id="anTypeLabel">完成率</b>
+            <svg class="an-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="an-dd-panel" id="anTypePanel" role="listbox" aria-label="统计类型" hidden></div>
+        </div>
+        <button type="button" class="btn" id="anExport">导出 CSV</button>
+      </div>
+      <button type="button" class="btn primary" id="analysisDone">完成</button>
+    </div>
+
+    <div class="an-stage">
+      <div class="an-wrap">
+        <div class="an-meta">
+          <span>统计区间 <b id="anMRange">—</b></span>
+          <i class="dot"></i>
+          <span id="anMDays">—</span>
+          <i class="dot"></i>
+          <span id="anMLast">—</span>
+        </div>
+
+        <section class="an-kpis" id="anKpis" aria-label="核心指标"></section>
+
+        <section class="an-charts">
+          <div class="card an-card">
+            <div class="an-card-head">
+              <div style="min-width:0">
+                <h3 id="anBarTitle">完成情况</h3>
+                <p id="anBarSub">—</p>
+              </div>
+              <div class="an-legend" id="anBarLegend"></div>
+            </div>
+            <div class="an-plot-wrap">
+              <div id="anPlotArea">
+                <div class="an-plot" id="anPlot"></div>
+                <div class="an-xlabels" id="anXlabels"></div>
+              </div>
+              <div id="anPlotEmpty" hidden></div>
+            </div>
+          </div>
+
+          <div class="card an-card">
+            <div class="an-card-head">
+              <div style="min-width:0">
+                <h3 id="anTopTitle">各规则完成率 Top 5</h3>
+                <p id="anTopSub">—</p>
+              </div>
+            </div>
+            <div id="anTopBody"></div>
+          </div>
+        </section>
+
+        <section class="card an-table-card">
+          <div class="an-card-head">
+            <div style="min-width:0">
+              <h3>任务明细</h3>
+              <p id="anTblSub">点表头可切换排序</p>
+            </div>
+            <div class="an-legend"><span id="anTblCount">—</span></div>
+          </div>
+          <table class="an-tbl">
+            <thead>
+              <tr>
+                <th class="sortable" data-akey="rule" style="width:19%">规则</th>
+                <th class="sortable" data-akey="task" style="width:16%">任务</th>
+                <th class="sortable" data-akey="exp" style="width:15%">应完成周期</th>
+                <th class="sortable" data-akey="done" style="width:13%">已完成</th>
+                <th class="sortable" data-akey="rate" style="width:22%">完成率</th>
+                <th class="sortable" data-akey="last" style="width:15%">最近打卡</th>
+              </tr>
+            </thead>
+            <tbody id="anTblBody"></tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       设置（整页覆盖层）：同步 / 关于
+       ======================================================================= -->
+  <section class="screen" id="settingsScreen" hidden aria-label="设置">
+    <div class="screen-head">
+      <button class="icon-btn" id="setBack" type="button" aria-label="返回月历" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2>设置</h2>
+      <span class="sub">仅影响本机</span>
+      <div style="flex:1"></div>
+      <button class="btn" id="setDone" type="button">完成</button>
+    </div>
+    <div class="set-body">
+      <nav class="set-nav" id="setNav" aria-label="设置分类"></nav>
+      <div class="set-main" id="setMain"></div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       收起后只剩的小三角（照 prototype/pc.html 的 .snap-handle：26×48、贴边、圆角 10）。
+       它是窗口缩到 26×48 之后页面里唯一的可见内容 —— 点击展开。
+       ======================================================================= -->
+  <button type="button" class="snap-handle" id="snapHandle" hidden data-edge="right"
+          aria-label="展开窗口" title="展开">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+
+  <div class="mask" id="mask" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-head">
+        <h3 id="sheetTitle">—</h3>
+        <p id="sheetSub">—</p>
+        <button class="sheet-close" id="sheetClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+               stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+      <!-- 「全部完成」：settings.js 的容器，把当天所有未完成任务一次打卡。
+           显隐与按钮状态由 settings.js 跟着 #mask 的 hidden 与 #sheetList 的重绘同步，app.js 不动。 -->
+      <div class="sheet-doneall" id="sheetDoneAll" hidden>
+        <span class="da-hint" id="sheetDoneAllHint">—</span>
+        <button class="btn sm primary" id="sheetDoneAllBtn" type="button">全部完成</button>
+      </div>
+      <div class="sheet-list" id="sheetList"></div>
+    </div>
+  </div>
+
+  <script src="mock.js"></script>
+  <script src="app.js"></script>
+  <!-- 按页面拆分的模块，顺序：管理页 → 统计页 → 设置页 → 其它小件 -->
+  <script src="mgr.js"></script>
+  <script src="analysis.js"></script>
+  <script src="settings.js"></script>
+  <script src="misc.js"></script>
+</body>
+</html>

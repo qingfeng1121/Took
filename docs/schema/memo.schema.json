@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://took.app/schema/memo.schema.json",
+  "title": "Memo",
+  "description": "记事 / 倒数日 / 笔记本。不挂规则下，不进打卡统计。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "rev",
+    "updated_at",
+    "deleted",
+    "dirty"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2
+      ],
+      "description": "0=记事 1=倒数日 2=笔记本"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "content": {
+      "type": "string",
+      "description": "记事正文 / 倒数日备注 / 笔记本正文"
+    },
+    "start_date": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/dateKey"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "记事：可空（空=不排期）；倒数日：目标日；笔记本：不用"
+    },
+    "end_date": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/dateKey"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "记事：时间段结束，空=单日；其余不用"
+    },
+    "category": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 20
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "仅笔记本使用。分类名由用户自建，默认 '未分类'，按创建顺序排序，不做颜色。"
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deleted": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    },
+    "dirty": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": 1
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "start_date"
+        ],
+        "properties": {
+          "start_date": {
+            "$ref": "#/$defs/dateKey"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": 0
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "start_date": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/dateKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "dateKey": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+    }
+  }
+}

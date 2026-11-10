@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标前景：橙色圆环 + 中心白色实心圆点（周期 + 已打卡 的视觉缩写）。
+
+  安全区（本文件唯一的排版约束）：
+    - 画布 108x108dp。启动器用圆形 / 圆角方形 / 水滴等遮罩裁切，
+      四周各 18dp 属于**可被裁掉的出血区**，只在视觉上用于视差，不能放内容；
+    - 规范保证可见的是**中心 66dp 圆**（半径 33dp），内容必须落在里面；
+    - 本图标主体最大外径 = 圆环外沿 = 22 + 7/2 = 25.5dp，距安全圆还有 7.5dp 余量，
+      因此圆形遮罩（72dp 直径）与最激进的圆角方形遮罩都不会切到任何一笔。
+
+  尺寸：圆环 中心(54,54) 半径 22 描边 7（外沿 25.5 / 内沿 18.5）；
+        中心点 半径 6.5，与环内沿留 12dp 空隙。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0"
+        android:strokeColor="#F97316"
+        android:strokeWidth="7" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54 m-6.5,0 a6.5,6.5 0 1,0 13,0 a6.5,6.5 0 1,0 -13,0" />
+</vector>

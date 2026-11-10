@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://took.app/schema/reminder.schema.json",
+  "title": "Reminder",
+  "description": "提醒：挂在规则（owner_kind=0）或记事/倒数日（1/2）上。通知与闹钟是两个独立开关，可单开也可同时开；两者都关等价于「不提醒」。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "owner_kind",
+    "owner_id",
+    "time_of_day",
+    "rev",
+    "updated_at",
+    "deleted",
+    "dirty"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner_kind": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2
+      ],
+      "description": "0=规则 1=记事 2=倒数日"
+    },
+    "owner_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "指向 rule.id 或 memo.id"
+    },
+    "notify_on": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0,
+      "description": "是否发通知"
+    },
+    "alarm_on": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0,
+      "description": "是否响闹钟"
+    },
+    "time_of_day": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+      "description": "HH:mm，精确到分钟"
+    },
+    "notify_text": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 60,
+      "description": "通知文案，空则用「该打卡了：<规则名>」"
+    },
+    "offset_days": {
+      "type": "integer",
+      "minimum": -30,
+      "maximum": 30,
+      "default": 0,
+      "description": "提前/延后 N 天提醒；负数=提前"
+    },
+    "repeat_rule": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0,
+      "description": "0=只在周期第一个命中日提醒 1=每个命中日都提醒"
+    },
+    "snooze_min": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 60,
+      "default": 0,
+      "description": "贪睡间隔分钟，0=不贪睡"
+    },
+    "enabled": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 1
+    },
+    "rev": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deleted": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    },
+    "dirty": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "default": 0
+    }
+  },
+  "allOf": [
+    {
+      "description": "通知与闹钟至少开一个。「两者都关」不是一个合法的提醒状态——想不提醒就删掉这一行（软删）或 enabled=0。",
+      "anyOf": [
+        {
+          "properties": {
+            "notify_on": {
+              "const": 1
+            }
+          },
+          "required": [
+            "notify_on"
+          ]
+        },
+        {
+          "properties": {
+            "alarm_on": {
+              "const": 1
+            }
+          },
+          "required": [
+            "alarm_on"
+          ]
+        }
+      ]
+    }
+  ]
+}

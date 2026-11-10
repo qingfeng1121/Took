@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「月历」组件的声明。与 today_widget_info 同口径，但尺寸按日历给：
+
+  - targetCellWidth/Height = 4x4：桌面小组件通常 4x4 或 5x5，42 格要 6 行才排得下，
+    4x4 是能看清日期数字的下限；用户可自行拉大到 5x5。
+  - minWidth/minHeight 留 2x2 的下限，resizeMode 双向可拉伸：
+    真实密度由 MonthWidgetPlan.tierForSize 按 LocalSize 分三档
+    （MINI 只留日期 + 今天标记 / MEDIUM 加 3 个圆点 / LARGE 6 个圆点 + 「+N」）。
+  - updatePeriodMillis=1800000 是系统那条低保证刷新；跨天那一次由 WidgetTickScheduler
+    在本地零点排的一次性闹钟兜住（与今日概览共用同一个闹钟，不重复排）。
+
+  previewImage 与 previewLayout 并存：previewLayout（Android 12+）由桌面实时渲染，
+  previewImage（全部版本）是静态位图兜底。之前只有 previewLayout，Android 11 及以下
+  和部分 ROM 的小部件列表取不到预览，显示成系统默认占位图。
+  res/drawable/month_widget_preview.png 按本工程 previewLayout 的姿态绘制，240x240。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_month_description"
+    android:initialLayout="@layout/month_widget_loading"
+    android:minWidth="250dp"
+    android:minHeight="250dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:previewLayout="@layout/month_widget_preview"
+    android:previewImage="@drawable/month_widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="4"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

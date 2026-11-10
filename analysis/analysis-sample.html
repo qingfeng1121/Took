@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<title>Took · 统计分析（静态样例）</title>
+<style>
+/* ============================================================================
+   1. 设计令牌 —— 与 prototype/pc.html 逐字一致，本页不发明新色值
+   ========================================================================= */
+:root{
+  --bg:          #eef0f4;
+  --surface:     #ffffff;
+  --line:        #f0f2f5;
+  --text:        #1f2329;
+  --text-2:      #8a9099;
+  --text-3:      #ced3da;
+  --accent:      #f97316;
+  --accent-weak: #fff4ec;
+  --accent-line: #fbbf94;
+  --accent-text: #d9600f;
+  --today:       #e53935;
+  --radius:      18px;
+
+  /* 派生值：只做层次，不引入新色系 */
+  --surface-2:   #f6f7f9;
+  --border:      #e8ebef;
+  --danger:      #c93a3a;
+  --shadow:      0 1px 2px rgba(16,24,40,.04), 0 8px 28px rgba(16,24,40,.06);
+  --shadow-lg:   0 24px 64px rgba(16,24,40,.18);
+  --ease:        cubic-bezier(.2,.8,.2,1);
+}
+
+/* ============================================================================
+   2. 基础
+   ========================================================================= */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+              "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background:var(--bg); color:var(--text);
+  display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{ font-family:inherit; color:inherit; }
+button:focus-visible,[tabindex]:focus-visible{ outline:2px solid var(--accent-line); outline-offset:2px; }
+::selection{ background:var(--accent-line); color:#fff; }
+
+/* ============================================================================
+   3. 顶部工具条（64px）：左标题 + 右「时间范围 / 统计类型 / 导出」
+   ========================================================================= */
+.topbar{
+  flex:none; height:64px; display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:0 22px; background:var(--surface);
+  border-bottom:1px solid var(--line); position:relative; z-index:30;
+}
+.tb-left{ min-width:0; }
+.tb-left h1{ font-size:17px; font-weight:680; letter-spacing:-.3px; line-height:1.2; }
+.tb-left p{
+  margin-top:3px; font-size:11.5px; color:var(--text-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tb-right{ display:flex; align-items:center; gap:10px; flex:none; }
+
+.seg{ display:flex; gap:2px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:999px; }
+.seg button{
+  border:0; background:transparent; cursor:pointer; font-size:12.5px; color:var(--text-2);
+  padding:6px 12px; border-radius:999px; white-space:nowrap;
+  transition:background .16s, color .16s, box-shadow .16s;
+}
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:var(--surface); color:var(--text); font-weight:640; box-shadow:0 1px 2px rgba(16,24,40,.10); }
+
+.tool{
+  display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px;
+  border:1px solid var(--border); border-radius:10px; background:var(--surface);
+  color:var(--text-2); font-size:12.5px; cursor:pointer; white-space:nowrap; transition:.16s;
+}
+.tool:hover{ border-color:var(--accent-line); color:var(--accent-text); }
+
+.dd{ position:relative; }
+.dd-btn .dd-k{ color:var(--text-2); }
+.dd-btn b{ font-weight:640; color:var(--text); }
+.dd-btn .chev{ width:13px; height:13px; transition:transform .18s var(--ease); }
+.dd.open .dd-btn{ border-color:var(--accent-line); }
+.dd.open .dd-btn b{ color:var(--accent-text); }
+.dd.open .chev{ transform:rotate(180deg); }
+.dd-panel{
+  position:absolute; right:0; top:calc(100% + 8px); min-width:158px; padding:6px;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  box-shadow:var(--shadow-lg); z-index:40;
+}
+.dd-panel[hidden]{ display:none; }
+.dd-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+  padding:8px 10px; border:0; background:transparent; border-radius:9px;
+  font-size:12.5px; color:var(--text-2); cursor:pointer; text-align:left; transition:.14s;
+}
+.dd-item:hover{ background:var(--surface-2); color:var(--text); }
+.dd-item.on{ background:var(--accent-weak); color:var(--accent-text); font-weight:640; }
+.dd-item svg{ flex:none; width:13px; height:13px; opacity:0; }
+.dd-item.on svg{ opacity:1; }
+
+/* ============================================================================
+   4. 内容区
+   ========================================================================= */
+.stage{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:18px 24px 26px; }
+.content{ max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+
+.meta{ display:flex; align-items:center; gap:9px; min-width:0; font-size:11.5px; color:var(--text-2); }
+.meta b{ color:var(--text); font-weight:640; font-variant-numeric:tabular-nums; }
+.meta .dot{ flex:none; width:3px; height:3px; border-radius:50%; background:var(--text-3); }
+.meta span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.kpi{
+  min-width:0; background:var(--surface); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:15px 17px 14px;
+}
+.kpi-label{ font-size:12px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kpi-num{ margin-top:9px; display:flex; align-items:baseline; gap:4px; }
+.kpi-num b{
+  font-size:30px; font-weight:700; letter-spacing:-1.2px; line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.kpi-num span{ font-size:12px; color:var(--text-2); }
+.kpi-sub{
+  margin-top:8px; font-size:11.5px; color:var(--text-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.kpi-delta{
+  margin-top:5px; display:flex; align-items:center; gap:4px;
+  font-size:11.5px; font-variant-numeric:tabular-nums;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.kpi-delta .arw{ font-size:9px; }
+.kpi-delta.up{ color:var(--accent-text); }
+.kpi-delta.down{ color:var(--danger); }
+.kpi-delta.flat{ color:var(--text-3); }
+
+.card{
+  min-width:0; background:var(--surface); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:16px 18px 14px;
+}
+.card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.card-head h2{ font-size:13.5px; font-weight:680; letter-spacing:-.1px; }
+.card-head p{ margin-top:4px; font-size:11.5px; color:var(--text-2); }
+.legend{ flex:none; display:flex; align-items:center; gap:12px; padding-top:2px; }
+.legend span{ display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); white-space:nowrap; }
+.legend i{ width:7px; height:7px; border-radius:2px; display:inline-block; }
+
+.charts{ display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); gap:16px; }
+
+/* 柱状图：只用 div 高度，不引图表库 */
+.plot-wrap{ display:flex; flex-direction:column; gap:8px; padding-top:4px; }
+.plot{
+  position:relative; height:188px; display:flex; align-items:flex-end; gap:4px;
+  border-bottom:1px solid var(--border);
+}
+.plot::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(to top,var(--line) 0 1px,transparent 1px 25%);
+}
+.bar{
+  position:relative; flex:1 1 0; min-width:0; height:100%; cursor:default;
+  display:flex; flex-direction:column; justify-content:flex-end;
+}
+.bar .stk{
+  flex:1 1 auto; display:flex; flex-direction:column; justify-content:flex-end;
+  transition:opacity .14s;
+}
+.bar .sgm{ width:100%; min-height:0; }
+.bar .sgm.done{ background:var(--accent); }
+.bar .sgm.miss{ background:var(--text-3); }
+.bar .sgm.task{ background:var(--accent-line); }
+.bar .stub{ flex:none; height:4px; border-radius:2px; background:var(--line); }
+.bar:hover .stk{ opacity:.75; }
+.xlabels{ display:flex; gap:4px; }
+.xlabels span{
+  flex:1 1 0; min-width:0; text-align:center; font-size:10.5px; color:var(--text-3);
+  white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums;
+}
+
+/* 水平条形图 */
+.xmonths{ display:flex; gap:4px; margin-top:2px; }
+.xmonths span{ text-align:center; font-size:10px; color:var(--text-3); letter-spacing:.2px; border-top:1px dashed var(--line); padding-top:4px; white-space:nowrap; overflow:hidden; }
+.hb-list{ display:flex; flex-direction:column; gap:15px; padding:3px 0 2px; }
+.hb{ display:flex; align-items:center; gap:10px; min-width:0; }
+.hb-name{
+  flex:none; width:80px; font-size:12px; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.hb-track{ flex:1 1 auto; min-width:24px; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+.hb-track i{ display:block; height:100%; border-radius:999px; background:var(--accent-line); }
+.hb.top .hb-track i{ background:linear-gradient(90deg,var(--accent-line),var(--accent)); }
+.hb-val{
+  flex:none; width:56px; text-align:right; font-size:12px; font-weight:640;
+  font-variant-numeric:tabular-nums;
+}
+.card-foot{ margin-top:14px; padding-top:11px; border-top:1px solid var(--line); font-size:11px; color:var(--text-3); }
+
+.empty{
+  grid-column:1 / -1;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; padding:34px 10px; text-align:center;
+}
+.empty .ico{
+  width:38px; height:38px; border-radius:50%; background:var(--accent-weak);
+  color:var(--accent); display:grid; place-items:center; margin-bottom:2px;
+}
+.empty .ico svg{ width:18px; height:18px; }
+.empty b{ font-size:12.5px; font-weight:640; color:var(--text); }
+.empty span{ font-size:11.5px; color:var(--text-2); }
+
+/* ============================================================================
+   5. 任务明细表
+   ========================================================================= */
+.table-card{ padding:16px 18px 6px; }
+.tbl{ width:100%; border-collapse:collapse; table-layout:fixed; }
+.tbl th{
+  font-size:11.5px; font-weight:500; color:var(--text-2); text-align:left;
+  padding:9px 8px; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.tbl th:first-child,.tbl td:first-child{ padding-left:2px; }
+.tbl th.sortable{ cursor:pointer; user-select:none; transition:color .14s; }
+.tbl th.sortable:hover{ color:var(--text); }
+.tbl th.active{ color:var(--text); font-weight:640; }
+.caret{
+  display:inline-block; margin-left:5px; vertical-align:middle;
+  width:0; height:0; border-left:3.5px solid transparent; border-right:3.5px solid transparent;
+  border-top:5px solid var(--text-3);
+}
+th.asc .caret{ border-top:0; border-bottom:5px solid var(--accent); }
+th.desc .caret{ border-top:5px solid var(--accent); }
+.tbl td{
+  font-size:12.5px; padding:12px 8px; border-bottom:1px solid var(--line);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums;
+}
+.tbl tbody tr:last-child td{ border-bottom:0; }
+.tbl tbody tr:hover td{ background:var(--surface-2); }
+.tbl td.no-empty-pad{ padding:0; }
+.rule-cell{ display:flex; align-items:center; gap:7px; min-width:0; }
+.rule-cell i{ flex:none; width:6px; height:6px; border-radius:50%; background:var(--accent-line); }
+.rule-cell span{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.task-cell{ display:flex; align-items:center; gap:6px; min-width:0; }
+.task-cell em{ font-style:normal; min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+.rate{ display:flex; align-items:center; gap:9px; }
+.rate-track{ flex:1 1 auto; min-width:26px; max-width:76px; height:6px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+.rate-track i{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+.rate-track i.low{ background:var(--accent-line); }
+.rate-track i.zero{ background:var(--text-3); }
+.rate b{ flex:none; min-width:42px; text-align:right; font-size:12px; font-weight:640; }
+.mut{ color:var(--text-3); }
+.pill{
+  flex:none; display:inline-flex; align-items:center; height:19px; padding:0 7px;
+  border-radius:999px; background:var(--accent-weak); color:var(--accent-text);
+  font-size:10.5px; font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.pill.plain{ background:var(--surface-2); color:var(--text-2); }
+
+/* ============================================================================
+   6. 轻提示 / 悬浮提示
+   ========================================================================= */
+.snack{
+  position:fixed; left:50%; bottom:32px; z-index:88; pointer-events:none;
+  padding:10px 18px; border-radius:999px; font-size:12.5px;
+  background:rgba(31,35,41,.92); color:#fff; box-shadow:var(--shadow);
+  transform:translate(-50%,12px); opacity:0;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);
+}
+.snack.show{ opacity:1; transform:translate(-50%,0); }
+.tip{
+  position:fixed; left:0; top:0; z-index:120; pointer-events:none; max-width:250px;
+  padding:7px 10px; border-radius:9px; background:rgba(31,35,41,.94); color:#fff;
+  font-size:11.5px; line-height:1.65; white-space:pre-line;
+  box-shadow:0 8px 24px rgba(16,24,40,.22); opacity:0; transform:translateY(4px);
+  transition:opacity .14s var(--ease), transform .14s var(--ease);
+}
+.tip.show{ opacity:1; transform:translateY(0); }
+
+/* ============================================================================
+   7. 窄屏兜底：1280 与 1000 两个宽度都不出现横向滚动条
+   ========================================================================= */
+@media (max-width:1140px){
+  .topbar{ padding:0 16px; gap:12px; }
+  .stage{ padding:16px 16px 22px; }
+  .seg button{ padding:6px 10px; }
+  .card{ padding:15px 16px 13px; }
+  .table-card{ padding:15px 16px 6px; }
+  .kpi{ padding:14px 15px 13px; }
+  .kpi-num b{ font-size:27px; }
+  .hb-name{ width:70px; }
+  .content{ gap:14px; }
+}
+@media (max-width:1020px){
+  .seg button{ padding:6px 9px; font-size:12px; }
+  .tb-right{ gap:8px; }
+  .tool{ padding:0 10px; }
+  .tb-left p{ max-width:250px; }
+}
+</style>
+</head>
+<body>
+<!-- ===========================================================================
+     顶部工具条：左标题 / 右「时间范围 · 统计类型 · 导出」
+     ======================================================================== -->
+<header class="topbar">
+  <div class="tb-left">
+    <h1>统计分析</h1>
+    <p id="subtitle">按周期统计，一个周期只计一次</p>
+  </div>
+
+  <div class="tb-right">
+    <div class="seg" id="rangeSeg" role="group" aria-label="时间范围"></div>
+
+    <div class="dd" id="typeDd">
+      <button class="tool dd-btn" id="typeBtn" type="button"
+              aria-haspopup="listbox" aria-expanded="false" aria-controls="typePanel">
+        <span class="dd-k">统计类型</span>
+        <b id="typeLabel">完成率</b>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="dd-panel" id="typePanel" role="listbox" aria-label="统计类型" hidden></div>
+    </div>
+
+    <button class="tool" id="exportBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+           style="width:14px;height:14px">
+        <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/>
+        <path d="M4.5 15.5v3A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-3"/>
+      </svg>
+      导出
+    </button>
+  </div>
+</header>
+
+<!-- ===========================================================================
+     内容区
+     ======================================================================== -->
+<main class="stage">
+  <div class="content">
+
+    <div class="meta">
+      <span>统计区间 <b id="mRange">—</b></span>
+      <i class="dot"></i>
+      <span id="mDays">—</span>
+      <i class="dot"></i>
+      <span id="mLast">—</span>
+    </div>
+
+    <section class="kpis" id="kpis" aria-label="核心指标"></section>
+
+    <section class="charts">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2 id="barTitle">每日完成情况</h2>
+            <p id="barSub">—</p>
+          </div>
+          <div class="legend" id="barLegend"></div>
+        </div>
+        <div class="plot-wrap">
+          <div id="plotArea">
+            <div class="plot" id="plot"></div>
+            <div class="xlabels" id="xlabels"></div>
+            <div class="xmonths" id="xmonths" hidden></div>
+          </div>
+          <div id="plotEmpty" hidden></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2 id="topTitle">各规则完成率 Top 5</h2>
+            <p id="topSub">—</p>
+          </div>
+        </div>
+        <div id="topBody"></div>
+      </div>
+    </section>
+
+    <section class="card table-card">
+      <div class="card-head">
+        <div>
+          <h2>任务明细</h2>
+          <p id="tblSub">点表头可切换排序</p>
+        </div>
+        <div class="legend"><span id="tblCount">—</span></div>
+      </div>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="sortable" data-key="rule" style="width:19%">规则</th>
+            <th class="sortable" data-key="task" style="width:16%">任务</th>
+            <th class="sortable" data-key="a" style="width:15%">应完成周期</th>
+            <th class="sortable" data-key="b" style="width:13%">已完成</th>
+            <th class="sortable" data-key="c" style="width:22%">完成率</th>
+            <th class="sortable" data-key="last" style="width:15%">最近打卡</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </section>
+
+  </div>
+</main>
+
+<div class="snack" id="snack" role="status" aria-live="polite"></div>
+<div class="tip" id="tip" role="tooltip"></div>
+<script>
+/* 静态样例：数据全部写死在本文件的 DATASET 里，不发任何外部请求 */
+var DATASET = {"today":20261123,"week":{"fromText":"2026年11月23日","toText":"11月29日","gran":"day","fromRaw":20261123,"toRaw":20261129,"buckets":[{"k":"23","tip":"2026年11月23日 周一","done":0,"exp":4,"active":0,"tasks":0},{"k":"24","tip":"2026年11月24日 周二","done":0,"exp":1,"active":0,"tasks":0},{"k":"25","tip":"2026年11月25日 周三","done":0,"exp":0,"active":0,"tasks":0},{"k":"26","tip":"2026年11月26日 周四","done":0,"exp":0,"active":0,"tasks":0},{"k":"27","tip":"2026年11月27日 周五","done":0,"exp":1,"active":0,"tasks":0},{"k":"28","tip":"2026年11月28日 周六","done":0,"exp":0,"active":0,"tasks":0},{"k":"29","tip":"2026年11月29日 周日","done":0,"exp":0,"active":0,"tasks":0}],"rows":[{"rule":"工作日常规","task":"健身","exp":1,"done":0,"active":0,"gap":1,"last":"—","lastRaw":0,"streak":0},{"rule":"工作日常规","task":"早起","exp":1,"done":0,"active":0,"gap":1,"last":"—","lastRaw":0,"streak":0},{"rule":"单词打卡","task":"背单词","exp":1,"done":0,"active":0,"gap":1,"last":"—","lastRaw":0,"streak":0},{"rule":"阅读","task":"读书","exp":2,"done":0,"active":0,"gap":2,"last":"—","lastRaw":0,"streak":0},{"rule":"跑步","task":"跑步","exp":1,"done":0,"active":0,"gap":1,"last":"—","lastRaw":0,"streak":0}],"pRows":[{"rule":"工作日常规","task":"健身","exp":1,"done":1,"active":1,"gap":0,"last":"11月17日","lastRaw":20261117,"streak":1},{"rule":"工作日常规","task":"早起","exp":1,"done":1,"active":1,"gap":0,"last":"11月20日","lastRaw":20261120,"streak":1},{"rule":"单词打卡","task":"背单词","exp":1,"done":1,"active":1,"gap":0,"last":"11月16日","lastRaw":20261116,"streak":1},{"rule":"阅读","task":"读书","exp":2,"done":2,"active":2,"gap":0,"last":"11月21日","lastRaw":20261121,"streak":1},{"rule":"跑步","task":"跑步","exp":1,"done":1,"active":1,"gap":0,"last":"11月22日","lastRaw":20261122,"streak":1}],"t":{"done":0,"exp":6,"days":7,"activeDays":0,"maxDay":0,"bestStreak":0,"curStreak":0,"gaps":0,"lastDay":0,"lastText":"","lastFull":"","totalDays":7},"p":{"done":6,"exp":6,"days":7,"activeDays":6,"maxDay":1,"bestStreak":3,"curStreak":3,"gaps":1,"lastDay":20261122,"lastText":"11月22日","lastFull":"2026年11月22日 周日","totalDays":7},"granName":"每日"},"month":{"fromText":"2026年11月1日","toText":"11月23日","gran":"day","fromRaw":20261101,"toRaw":20261123,"buckets":[{"k":"1","tip":"2026年11月1日 周日","done":1,"exp":1,"active":1,"tasks":1},{"k":"2","tip":"2026年11月2日 周一","done":0,"exp":4,"active":0,"tasks":0},{"k":"3","tip":"2026年11月3日 周二","done":1,"exp":1,"active":1,"tasks":1},{"k":"4","tip":"2026年11月4日 周三","done":0,"exp":0,"active":0,"tasks":0},{"k":"5","tip":"2026年11月5日 周四","done":1,"exp":1,"active":1,"tasks":1},{"k":"6","tip":"2026年11月6日 周五","done":0,"exp":1,"active":0,"tasks":0},{"k":"7","tip":"2026年11月7日 周六","done":2,"exp":0,"active":1,"tasks":2},{"k":"8","tip":"2026年11月8日 周日","done":1,"exp":0,"active":1,"tasks":1},{"k":"9","tip":"2026年11月9日 周一","done":0,"exp":5,"active":0,"tasks":0},{"k":"10","tip":"2026年11月10日 周二","done":2,"exp":0,"active":1,"tasks":2},{"k":"11","tip":"2026年11月11日 周三","done":0,"exp":0,"active":0,"tasks":0},{"k":"12","tip":"2026年11月12日 周四","done":1,"exp":1,"active":1,"tasks":1},{"k":"13","tip":"2026年11月13日 周五","done":1,"exp":0,"active":1,"tasks":1},{"k":"14","tip":"2026年11月14日 周六","done":1,"exp":0,"active":1,"tasks":1},{"k":"15","tip":"2026年11月15日 周日","done":2,"exp":1,"active":1,"tasks":2},{"k":"16","tip":"2026年11月16日 周一","done":1,"exp":4,"active":1,"tasks":1},{"k":"17","tip":"2026年11月17日 周二","done":1,"exp":0,"active":1,"tasks":1},{"k":"18","tip":"2026年11月18日 周三","done":1,"exp":1,"active":1,"tasks":1},{"k":"19","tip":"2026年11月19日 周四","done":0,"exp":0,"active":0,"tasks":0},{"k":"20","tip":"2026年11月20日 周五","done":1,"exp":0,"active":1,"tasks":1},{"k":"21","tip":"2026年11月21日 周六","done":1,"exp":1,"active":1,"tasks":1},{"k":"22","tip":"2026年11月22日 周日","done":1,"exp":0,"active":1,"tasks":1},{"k":"23","tip":"2026年11月23日 周一","done":0,"exp":4,"active":0,"tasks":0}],"rows":[{"rule":"工作日常规","task":"健身","exp":4,"done":3,"active":3,"gap":1,"last":"11月17日","lastRaw":20261117,"streak":1},{"rule":"工作日常规","task":"早起","exp":4,"done":2,"active":2,"gap":2,"last":"11月20日","lastRaw":20261120,"streak":1},{"rule":"单词打卡","task":"背单词","exp":4,"done":3,"active":3,"gap":1,"last":"11月16日","lastRaw":20261116,"streak":2},{"rule":"阅读","task":"读书","exp":7,"done":6,"active":6,"gap":1,"last":"11月21日","lastRaw":20261121,"streak":1},{"rule":"跑步","task":"跑步","exp":4,"done":3,"active":3,"gap":1,"last":"11月22日","lastRaw":20261122,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":1,"done":1,"active":1,"gap":0,"last":"11月1日","lastRaw":20261101,"streak":1},{"rule":"房租","task":"交房租","exp":1,"done":1,"active":1,"gap":0,"last":"11月5日","lastRaw":20261105,"streak":1}],"pRows":[{"rule":"工作日常规","task":"健身","exp":3,"done":2,"active":2,"gap":1,"last":"10月20日","lastRaw":20261020,"streak":1},{"rule":"工作日常规","task":"早起","exp":3,"done":3,"active":3,"gap":0,"last":"10月20日","lastRaw":20261020,"streak":1},{"rule":"单词打卡","task":"背单词","exp":3,"done":3,"active":3,"gap":0,"last":"10月19日","lastRaw":20261019,"streak":1},{"rule":"阅读","task":"读书","exp":8,"done":6,"active":6,"gap":2,"last":"10月20日","lastRaw":20261020,"streak":2},{"rule":"跑步","task":"跑步","exp":3,"done":3,"active":3,"gap":0,"last":"10月24日","lastRaw":20261024,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":1,"done":1,"active":1,"gap":0,"last":"10月1日","lastRaw":20261001,"streak":1},{"rule":"房租","task":"交房租","exp":1,"done":1,"active":1,"gap":0,"last":"10月5日","lastRaw":20261005,"streak":1}],"t":{"done":19,"exp":25,"days":23,"activeDays":16,"maxDay":2,"bestStreak":7,"curStreak":3,"gaps":7,"lastDay":20261122,"lastText":"11月22日","lastFull":"2026年11月22日 周日","totalDays":23},"p":{"done":19,"exp":22,"days":23,"activeDays":12,"maxDay":3,"bestStreak":3,"curStreak":2,"gaps":11,"lastDay":20261020,"lastText":"10月20日","lastFull":"2026年10月20日 周二","totalDays":23},"granName":"每日"},"d30":{"fromText":"2026年10月25日","toText":"11月23日","gran":"day","fromRaw":20261025,"toRaw":20261123,"buckets":[{"k":"25","tip":"2026年10月25日 周日","done":0,"exp":1,"active":0,"tasks":0},{"k":"26","tip":"2026年10月26日 周一","done":1,"exp":4,"active":1,"tasks":1},{"k":"27","tip":"2026年10月27日 周二","done":1,"exp":0,"active":1,"tasks":1},{"k":"28","tip":"2026年10月28日 周三","done":1,"exp":1,"active":1,"tasks":1},{"k":"29","tip":"2026年10月29日 周四","done":0,"exp":0,"active":0,"tasks":0},{"k":"30","tip":"2026年10月30日 周五","done":0,"exp":0,"active":0,"tasks":0},{"k":"31","tip":"2026年10月31日 周六","done":0,"exp":1,"active":0,"tasks":0},{"k":"1","tip":"2026年11月1日 周日","done":2,"exp":1,"active":1,"tasks":2},{"k":"2","tip":"2026年11月2日 周一","done":0,"exp":4,"active":0,"tasks":0},{"k":"3","tip":"2026年11月3日 周二","done":1,"exp":1,"active":1,"tasks":1},{"k":"4","tip":"2026年11月4日 周三","done":0,"exp":0,"active":0,"tasks":0},{"k":"5","tip":"2026年11月5日 周四","done":1,"exp":1,"active":1,"tasks":1},{"k":"6","tip":"2026年11月6日 周五","done":0,"exp":1,"active":0,"tasks":0},{"k":"7","tip":"2026年11月7日 周六","done":2,"exp":0,"active":1,"tasks":2},{"k":"8","tip":"2026年11月8日 周日","done":1,"exp":0,"active":1,"tasks":1},{"k":"9","tip":"2026年11月9日 周一","done":0,"exp":5,"active":0,"tasks":0},{"k":"10","tip":"2026年11月10日 周二","done":2,"exp":0,"active":1,"tasks":2},{"k":"11","tip":"2026年11月11日 周三","done":0,"exp":0,"active":0,"tasks":0},{"k":"12","tip":"2026年11月12日 周四","done":1,"exp":1,"active":1,"tasks":1},{"k":"13","tip":"2026年11月13日 周五","done":1,"exp":0,"active":1,"tasks":1},{"k":"14","tip":"2026年11月14日 周六","done":1,"exp":0,"active":1,"tasks":1},{"k":"15","tip":"2026年11月15日 周日","done":2,"exp":1,"active":1,"tasks":2},{"k":"16","tip":"2026年11月16日 周一","done":1,"exp":4,"active":1,"tasks":1},{"k":"17","tip":"2026年11月17日 周二","done":1,"exp":0,"active":1,"tasks":1},{"k":"18","tip":"2026年11月18日 周三","done":1,"exp":1,"active":1,"tasks":1},{"k":"19","tip":"2026年11月19日 周四","done":0,"exp":0,"active":0,"tasks":0},{"k":"20","tip":"2026年11月20日 周五","done":1,"exp":0,"active":1,"tasks":1},{"k":"21","tip":"2026年11月21日 周六","done":1,"exp":1,"active":1,"tasks":1},{"k":"22","tip":"2026年11月22日 周日","done":1,"exp":0,"active":1,"tasks":1},{"k":"23","tip":"2026年11月23日 周一","done":0,"exp":4,"active":0,"tasks":0}],"rows":[{"rule":"工作日常规","task":"健身","exp":5,"done":3,"active":3,"gap":2,"last":"11月17日","lastRaw":20261117,"streak":1},{"rule":"工作日常规","task":"早起","exp":5,"done":2,"active":2,"gap":3,"last":"11月20日","lastRaw":20261120,"streak":1},{"rule":"单词打卡","task":"背单词","exp":5,"done":4,"active":4,"gap":1,"last":"11月16日","lastRaw":20261116,"streak":2},{"rule":"阅读","task":"读书","exp":10,"done":9,"active":9,"gap":1,"last":"11月21日","lastRaw":20261121,"streak":2},{"rule":"跑步","task":"跑步","exp":5,"done":3,"active":3,"gap":2,"last":"11月22日","lastRaw":20261122,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":1,"done":1,"active":1,"gap":0,"last":"11月1日","lastRaw":20261101,"streak":1},{"rule":"房租","task":"交房租","exp":1,"done":1,"active":1,"gap":0,"last":"11月5日","lastRaw":20261105,"streak":1}],"pRows":[{"rule":"工作日常规","task":"健身","exp":4,"done":3,"active":3,"gap":1,"last":"10月20日","lastRaw":20261020,"streak":1},{"rule":"工作日常规","task":"早起","exp":4,"done":4,"active":4,"gap":0,"last":"10月20日","lastRaw":20261020,"streak":1},{"rule":"单词打卡","task":"背单词","exp":4,"done":4,"active":4,"gap":0,"last":"10月19日","lastRaw":20261019,"streak":1},{"rule":"阅读","task":"读书","exp":10,"done":8,"active":8,"gap":2,"last":"10月20日","lastRaw":20261020,"streak":2},{"rule":"跑步","task":"跑步","exp":4,"done":4,"active":4,"gap":0,"last":"10月24日","lastRaw":20261024,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":1,"done":1,"active":1,"gap":0,"last":"10月1日","lastRaw":20261001,"streak":1},{"rule":"房租","task":"交房租","exp":1,"done":1,"active":1,"gap":0,"last":"10月5日","lastRaw":20261005,"streak":1}],"t":{"done":23,"exp":32,"days":30,"activeDays":19,"maxDay":2,"bestStreak":7,"curStreak":3,"gaps":11,"lastDay":20261122,"lastText":"11月22日","lastFull":"2026年11月22日 周日","totalDays":30},"p":{"done":25,"exp":28,"days":30,"activeDays":17,"maxDay":3,"bestStreak":3,"curStreak":1,"gaps":13,"lastDay":20261024,"lastText":"10月24日","lastFull":"2026年10月24日 周六","totalDays":30},"granName":"每日"},"quarter":{"fromText":"2026年10月1日","toText":"11月23日","gran":"week","fromRaw":20261001,"toRaw":20261123,"buckets":[{"k":"10/1","tip":"2026年10月1日 – 10月7日","done":6,"exp":9,"active":4,"tasks":5},{"k":"10/8","tip":"2026年10月8日 – 10月14日","done":7,"exp":6,"active":5,"tasks":4},{"k":"10/15","tip":"2026年10月15日 – 10月21日","done":5,"exp":6,"active":3,"tasks":5},{"k":"10/22","tip":"2026年10月22日 – 10月28日","done":4,"exp":7,"active":4,"tasks":3},{"k":"10/29","tip":"2026年10月29日 – 11月4日","done":3,"exp":7,"active":2,"tasks":2},{"k":"11/5","tip":"2026年11月5日 – 11月11日","done":6,"exp":7,"active":4,"tasks":6},{"k":"11/12","tip":"2026年11月12日 – 11月18日","done":8,"exp":7,"active":7,"tasks":4},{"k":"11/19","tip":"2026年11月19日 – 11月23日","done":3,"exp":5,"active":3,"tasks":3}],"rows":[{"rule":"工作日常规","task":"健身","exp":8,"done":5,"active":5,"gap":3,"last":"11月17日","lastRaw":20261117,"streak":1},{"rule":"工作日常规","task":"早起","exp":8,"done":5,"active":5,"gap":3,"last":"11月20日","lastRaw":20261120,"streak":1},{"rule":"单词打卡","task":"背单词","exp":8,"done":7,"active":7,"gap":1,"last":"11月16日","lastRaw":20261116,"streak":2},{"rule":"阅读","task":"读书","exp":18,"done":15,"active":15,"gap":3,"last":"11月21日","lastRaw":20261121,"streak":2},{"rule":"跑步","task":"跑步","exp":8,"done":6,"active":6,"gap":2,"last":"11月22日","lastRaw":20261122,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":2,"done":2,"active":2,"gap":0,"last":"11月1日","lastRaw":20261101,"streak":1},{"rule":"房租","task":"交房租","exp":2,"done":2,"active":2,"gap":0,"last":"11月5日","lastRaw":20261105,"streak":1}],"pRows":[{"rule":"工作日常规","task":"健身","exp":12,"done":10,"active":10,"gap":2,"last":"9月22日","lastRaw":20260922,"streak":1},{"rule":"工作日常规","task":"早起","exp":12,"done":6,"active":6,"gap":6,"last":"9月22日","lastRaw":20260922,"streak":1},{"rule":"单词打卡","task":"背单词","exp":12,"done":12,"active":12,"gap":0,"last":"9月21日","lastRaw":20260921,"streak":1},{"rule":"阅读","task":"读书","exp":28,"done":23,"active":23,"gap":5,"last":"9月24日","lastRaw":20260924,"streak":2},{"rule":"跑步","task":"跑步","exp":12,"done":7,"active":7,"gap":5,"last":"9月19日","lastRaw":20260919,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":3,"done":3,"active":3,"gap":0,"last":"9月1日","lastRaw":20260901,"streak":1},{"rule":"房租","task":"交房租","exp":3,"done":3,"active":3,"gap":0,"last":"9月5日","lastRaw":20260905,"streak":1}],"t":{"done":42,"exp":54,"days":54,"activeDays":32,"maxDay":3,"bestStreak":7,"curStreak":3,"gaps":22,"lastDay":20261122,"lastText":"11月22日","lastFull":"2026年11月22日 周日","totalDays":54},"p":{"done":64,"exp":82,"days":85,"activeDays":47,"maxDay":3,"bestStreak":5,"curStreak":2,"gaps":38,"lastDay":20260922,"lastText":"9月22日","lastFull":"2026年9月22日 周二","totalDays":85},"granName":"每周"},"year":{"fromText":"2026年1月1日","toText":"11月23日","gran":"month","fromRaw":20260101,"toRaw":20261123,"buckets":[{"k":"1月","tip":"2026年1月","done":27,"exp":29,"active":20,"tasks":7},{"k":"2月","tip":"2026年2月","done":22,"exp":27,"active":15,"tasks":7},{"k":"3月","tip":"2026年3月","done":27,"exp":33,"active":18,"tasks":8},{"k":"4月","tip":"2026年4月","done":24,"exp":28,"active":18,"tasks":7},{"k":"5月","tip":"2026年5月","done":25,"exp":29,"active":17,"tasks":7},{"k":"6月","tip":"2026年6月","done":25,"exp":32,"active":19,"tasks":7},{"k":"7月","tip":"2026年7月","done":23,"exp":28,"active":17,"tasks":7},{"k":"8月","tip":"2026年8月","done":22,"exp":32,"active":19,"tasks":7},{"k":"9月","tip":"2026年9月","done":25,"exp":28,"active":16,"tasks":7},{"k":"10月","tip":"2026年10月","done":23,"exp":29,"active":17,"tasks":7},{"k":"11月","tip":"2026年11月","done":20,"exp":25,"active":16,"tasks":7}],"rows":[{"rule":"工作日常规","task":"健身","exp":47,"done":39,"active":39,"gap":8,"last":"11月17日","lastRaw":20261117,"streak":1},{"rule":"工作日常规","task":"早起","exp":47,"done":33,"active":33,"gap":14,"last":"11月20日","lastRaw":20261120,"streak":1},{"rule":"单词打卡","task":"背单词","exp":47,"done":44,"active":44,"gap":3,"last":"11月16日","lastRaw":20261116,"streak":2},{"rule":"阅读","task":"读书","exp":109,"done":90,"active":90,"gap":19,"last":"11月21日","lastRaw":20261121,"streak":2},{"rule":"跑步","task":"跑步","exp":47,"done":34,"active":34,"gap":13,"last":"11月22日","lastRaw":20261122,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":11,"done":11,"active":11,"gap":0,"last":"11月1日","lastRaw":20261101,"streak":1},{"rule":"房租","task":"交房租","exp":11,"done":11,"active":11,"gap":0,"last":"11月5日","lastRaw":20261105,"streak":1},{"rule":"年度体检","task":"年度体检","exp":1,"done":1,"active":1,"gap":0,"last":"3月1日","lastRaw":20260301,"streak":1}],"pRows":[{"rule":"工作日常规","task":"健身","exp":46,"done":28,"active":28,"gap":18,"last":"11月18日","lastRaw":20251118,"streak":1},{"rule":"工作日常规","task":"早起","exp":46,"done":24,"active":24,"gap":22,"last":"11月11日","lastRaw":20251111,"streak":1},{"rule":"单词打卡","task":"背单词","exp":46,"done":33,"active":33,"gap":13,"last":"11月17日","lastRaw":20251117,"streak":2},{"rule":"阅读","task":"读书","exp":109,"done":67,"active":67,"gap":42,"last":"11月20日","lastRaw":20251120,"streak":2},{"rule":"跑步","task":"跑步","exp":46,"done":16,"active":16,"gap":30,"last":"11月23日","lastRaw":20251123,"streak":1},{"rule":"月度复盘","task":"月度复盘","exp":11,"done":7,"active":7,"gap":4,"last":"11月1日","lastRaw":20251101,"streak":1},{"rule":"房租","task":"交房租","exp":11,"done":8,"active":8,"gap":3,"last":"11月5日","lastRaw":20251105,"streak":1},{"rule":"年度体检","task":"年度体检","exp":1,"done":0,"active":0,"gap":1,"last":"—","lastRaw":0,"streak":0}],"t":{"done":263,"exp":320,"days":327,"activeDays":192,"maxDay":3,"bestStreak":7,"curStreak":3,"gaps":135,"lastDay":20261122,"lastText":"11月22日","lastFull":"2026年11月22日 周日","totalDays":327},"p":{"done":183,"exp":316,"days":327,"activeDays":139,"maxDay":4,"bestStreak":6,"curStreak":1,"gaps":188,"lastDay":20251123,"lastText":"11月23日","lastFull":"2025年11月23日 周日","totalDays":327},"granName":"每月"}};
+
+(function(){
+'use strict';
+
+var RANGES = [
+  { id:'week',    label:'本周' },
+  { id:'month',   label:'本月' },
+  { id:'d30',     label:'近 30 天' },
+  { id:'quarter', label:'本季度' },
+  { id:'year',    label:'今年' }
+];
+
+var TYPES = [
+  { id:'rate',   label:'完成率',   sub:'按周期统计：已完成周期 ÷ 应完成周期，同一周期内重复打卡只计一次' },
+  { id:'count',  label:'打卡次数', sub:'按周期统计：区间内实际完成的周期数，按天看打卡节奏' },
+  { id:'detail', label:'任务明细', sub:'按任务展开应完成与已完成周期，用来定位被漏掉的任务' },
+  { id:'streak', label:'连续天数', sub:'按自然日统计：当天有任意打卡即计入连续，断一天重新起算' }
+];
+
+var SORT_DEFAULT = { rule:'asc', task:'asc', a:'desc', b:'desc', c:'desc', last:'desc' };
+var COL_NAME = { rule:'规则', task:'任务', a:'应完成周期', b:'已完成', c:'完成率', last:'最近打卡' };
+var BAR_NOUN = { rate:'完成情况', count:'打卡次数', detail:'任务覆盖', streak:'打卡分布' };
+var BAR_HINT = {
+  rate:   '柱高 = 该段时间内应完成的周期数，橙色为已完成部分',
+  count:  '柱高 = 该段时间内完成的周期数',
+  detail: '柱高 = 该段时间内有打卡的任务种类数',
+  streak: '柱高 = 该段时间内完成的周期数，连续成片即为连续段'
+};
+
+var state = { range:'month', type:'rate', sort:{ key:'c', dir:'desc' } };
+
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+  });
+}
+function pct(v){ return (v * 100).toFixed(1); }
+function cur(){ return DATASET[state.range]; }
+function typeMeta(id){ for(var i=0;i<TYPES.length;i++) if(TYPES[i].id===id) return TYPES[i]; return TYPES[0]; }
+
+/* ----------------------------------------------------------- 派生指标 */
+function ruleStats(rows){
+  var map = {}, order = [];
+  rows.forEach(function(r){
+    if(!map[r.rule]){
+      map[r.rule] = { rule:r.rule, done:0, exp:0, tasks:0, streak:0, lastRaw:0 };
+      order.push(r.rule);
+    }
+    var o = map[r.rule];
+    o.done += r.done;
+    o.exp  += r.exp;
+    o.tasks += 1;
+    if(r.streak > o.streak) o.streak = r.streak;
+    if(r.lastRaw > o.lastRaw) o.lastRaw = r.lastRaw;
+  });
+  return order.map(function(k){
+    var o = map[k];
+    o.rate = o.exp ? o.done / o.exp : 0;
+    return o;
+  });
+}
+
+/* 环比：返回 { text, cls } —— cls 决定箭头颜色，invert 表示「数值变小是好事」 */
+function deltaText(c, p, unit, invert, digits){
+  digits = digits || 0;
+  var d = c - p;
+  if(Math.abs(d) < Math.pow(10, -digits) / 2) return { text:'持平', cls:'flat' };
+  var good = invert ? d < 0 : d > 0;
+  return { text:(d > 0 ? '+' : '') + d.toFixed(digits) + unit, cls: good ? 'up' : 'down' };
+}
+
+/* ----------------------------------------------------------- KPI 卡 */
+function buildKpis(){
+  var d = cur(), t = d.t, p = d.p, rows = d.rows, pRows = d.pRows;
+  var rate = t.exp ? t.done / t.exp : 0;
+  var pRate = p.exp ? p.done / p.exp : 0;
+  var pending = rows.filter(function(r){ return r.done < r.exp; }).length;
+  var pPending = pRows.filter(function(r){ return r.done < r.exp; }).length;
+  var perDay = t.done / t.totalDays;
+  var pPerDay = p.done / p.totalDays;
+
+  if(state.type === 'count'){
+    return [
+      { label:'打卡次数', value:t.done, unit:'次',
+        sub:'上期 ' + p.done + ' 次', delta:deltaText(t.done, p.done, ' 次') },
+      { label:'活跃天数', value:t.activeDays, unit:'天',
+        sub:'共 ' + t.totalDays + ' 天，覆盖 ' + pct(t.activeDays / t.totalDays) + '%',
+        delta:deltaText(t.activeDays, p.activeDays, ' 天') },
+      { label:'日均打卡', value:perDay.toFixed(2), unit:'次/天',
+        sub:'上期 ' + pPerDay.toFixed(2) + ' 次/天',
+        delta:deltaText(+perDay.toFixed(2), +pPerDay.toFixed(2), ' 次/天', false, 2) },
+      { label:'最长连续', value:t.bestStreak, unit:'天',
+        sub:'上期最长 ' + p.bestStreak + ' 天', delta:deltaText(t.bestStreak, p.bestStreak, ' 天') }
+    ];
+  }
+  if(state.type === 'detail'){
+    return [
+      { label:'参与任务', value:rows.length, unit:'个',
+        sub:'分属 ' + ruleStats(rows).length + ' 条规则',
+        delta:deltaText(rows.length, pRows.length, ' 个') },
+      { label:'应完成周期', value:t.exp, unit:'个',
+        sub:'覆盖 ' + t.totalDays + ' 天', delta:deltaText(t.exp, p.exp, ' 个') },
+      { label:'已完成周期', value:t.done, unit:'个',
+        sub:'上期 ' + p.done + ' 个', delta:deltaText(t.done, p.done, ' 个') },
+      { label:'待补漏任务', value:pending, unit:'个',
+        sub:'上期 ' + pPending + ' 个', delta:deltaText(pending, pPending, ' 个', true) }
+    ];
+  }
+  if(state.type === 'streak'){
+    return [
+      { label:'当前连续', value:t.curStreak, unit:'天',
+        sub:t.lastText ? '截至 ' + t.lastText : '区间内暂无打卡',
+        delta:deltaText(t.curStreak, p.curStreak, ' 天') },
+      { label:'最长连续', value:t.bestStreak, unit:'天',
+        sub:'上期最长 ' + p.bestStreak + ' 天', delta:deltaText(t.bestStreak, p.bestStreak, ' 天') },
+      { label:'活跃天数', value:t.activeDays, unit:'天',
+        sub:'共 ' + t.totalDays + ' 天', delta:deltaText(t.activeDays, p.activeDays, ' 天') },
+      { label:'断档天数', value:t.gaps, unit:'天',
+        sub:'整天没有任何打卡', delta:deltaText(t.gaps, p.gaps, ' 天', true) }
+    ];
+  }
+  return [
+    { label:'完成率', value:pct(rate), unit:'%',
+      sub:'已完成 ' + t.done + ' / 应完成 ' + t.exp + ' 个周期',
+      delta:p.exp ? deltaText(+pct(rate), +pct(pRate), ' 个百分点', false, 1) : { text:'上期无数据', cls:'flat' } },
+    { label:'已完成周期', value:t.done, unit:'个',
+      sub:'上期 ' + p.done + ' 个', delta:deltaText(t.done, p.done, ' 个') },
+    { label:'当前连续', value:t.curStreak, unit:'天',
+      sub:t.lastText ? '截至 ' + t.lastText : '区间内暂无打卡',
+      delta:deltaText(t.curStreak, p.curStreak, ' 天') },
+    { label:'最长连续', value:t.bestStreak, unit:'天',
+      sub:'上期最长 ' + p.bestStreak + ' 天', delta:deltaText(t.bestStreak, p.bestStreak, ' 天') }
+  ];
+}
+
+function renderKpis(){
+  $('kpis').innerHTML = buildKpis().map(function(k){
+    var d = k.delta;
+    var arw = d.cls === 'up' ? '▲' : (d.cls === 'down' ? '▼' : '·');
+    return '<div class="kpi">'
+      + '<p class="kpi-label">' + esc(k.label) + '</p>'
+      + '<p class="kpi-num"><b>' + k.value + '</b><span>' + esc(k.unit) + '</span></p>'
+      + '<p class="kpi-sub">' + esc(k.sub) + '</p>'
+      + '<p class="kpi-delta ' + d.cls + '"><span class="arw">' + arw + '</span>较上期 ' + esc(d.text) + '</p>'
+      + '</div>';
+  }).join('');
+}
+
+/* ----------------------------------------------------------- 空数据态 */
+function emptyHtml(){
+  return '<div class="empty">'
+    + '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"'
+    + ' stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="15" rx="3"/>'
+    + '<path d="M8 3.2v4M16 3.2v4M3.5 10.5h17"/><path d="M9 15h6"/></svg></span>'
+    + '<b>这段时间没有打卡记录</b>'
+    + '<span>换一个时间范围，或完成一次打卡后再来看</span>'
+    + '</div>';
+}
+
+/* ----------------------------------------------------------- 柱状图 */
+function renderChart(){
+  var d = cur(), gname = d.granName;
+  $('barTitle').textContent = gname + BAR_NOUN[state.type];
+  $('barSub').textContent = BAR_HINT[state.type];
+
+  $('barLegend').innerHTML = state.type === 'rate'
+    ? '<span><i style="background:#f97316"></i>已完成</span><span><i style="background:#ced3da"></i>未完成</span>'
+    : (state.type === 'detail'
+        ? '<span><i style="background:#fbbf94"></i>任务种类</span>'
+        : '<span><i style="background:#f97316"></i>已完成周期</span>');
+
+  var isEmpty = d.t.done === 0;
+  $('plotArea').hidden = isEmpty;
+  $('plotEmpty').hidden = !isEmpty;
+  if(isEmpty){
+    $('plotEmpty').innerHTML = emptyHtml();
+    $('plot').innerHTML = '';
+    $('xlabels').innerHTML = '';
+    return;
+  }
+  $('plotEmpty').innerHTML = '';
+
+  var buckets = d.buckets;
+  var maxExp = 1, maxVal = 1;
+  buckets.forEach(function(b){
+    if(b.exp > maxExp) maxExp = b.exp;
+    var v = state.type === 'detail' ? b.tasks : b.done;
+    if(v > maxVal) maxVal = v;
+  });
+
+  $('plot').innerHTML = buckets.map(function(b, i){
+    var inner;
+    if(state.type === 'rate'){
+      if(!b.exp){ inner = '<div class="stub"></div>'; }
+      else{
+        var miss = Math.max(0, b.exp - b.done);
+        var hDone = b.done / maxExp * 100;
+        var hMiss = miss / maxExp * 100;
+        inner = '<div class="stk">'
+          + (hMiss > 0 ? '<div class="sgm miss" style="height:' + hMiss.toFixed(2) + '%"></div>' : '')
+          + (hDone > 0 ? '<div class="sgm done" style="height:' + hDone.toFixed(2) + '%"></div>' : '')
+          + '</div>';
+      }
+    } else if(state.type === 'detail'){
+      var hTask = b.tasks / maxVal * 100;
+      inner = hTask > 0
+        ? '<div class="stk"><div class="sgm task" style="height:' + hTask.toFixed(2) + '%"></div></div>'
+        : '<div class="stub"></div>';
+    } else {
+      var hv = b.done / maxVal * 100;
+      inner = hv > 0
+        ? '<div class="stk"><div class="sgm done" style="height:' + hv.toFixed(2) + '%"></div></div>'
+        : '<div class="stub"></div>';
+    }
+    return '<div class="bar" data-i="' + i + '">' + inner + '</div>';
+  }).join('');
+
+  var n = buckets.length;
+  var step = n <= 8 ? 1 : (n <= 16 ? 2 : Math.ceil(n / 11));
+  $('xlabels').innerHTML = buckets.map(function(b, i){
+    var show = (i % step === 0) || i === n - 1;
+    return '<span>' + (show ? esc(b.k) : '') + '</span>';
+  }).join('');
+
+  // 跨月区间补一行月份带，避免「1 2 3」分不清是哪个月
+  var band = monthBand();
+  $('xmonths').hidden = !band;
+  $('xmonths').innerHTML = band;
+}
+
+/* 日粒度且跨月时，把月份按桶数比例铺成一行色带 */
+function monthBand(){
+  var d = cur();
+  if(d.gran !== 'day') return '';
+  var groups = [], last = null;
+  d.buckets.forEach(function(b){
+    var m = b.tip.slice(0, b.tip.indexOf('月') + 1);
+    if(m !== last){ groups.push({ label:m, n:0 }); last = m; }
+    groups[groups.length - 1].n += 1;
+  });
+  if(groups.length < 2) return '';
+  return groups.map(function(g){
+    return '<span style="flex:' + g.n + ' 1 0">' + esc(g.label) + '</span>';
+  }).join('');
+}
+
+function bucketTip(i){
+  var b = cur().buckets[i];
+  var lines = [b.tip];
+  if(state.type === 'rate'){
+    lines.push('应完成 ' + b.exp + ' 个周期，已完成 ' + b.done + ' 个');
+    if(b.exp) lines.push('完成率 ' + pct(b.done / b.exp) + '%');
+  } else if(state.type === 'detail'){
+    lines.push('涉及 ' + b.tasks + ' 个任务，打卡 ' + b.done + ' 次');
+  } else if(state.type === 'streak'){
+    lines.push(b.done > 0 ? '完成 ' + b.done + ' 个周期' : '当天没有打卡');
+  } else {
+    lines.push('完成 ' + b.done + ' 个周期');
+  }
+  return lines.join('\n');
+}
+
+/* ----------------------------------------------------------- Top 5 条形 */
+function renderTop(){
+  var d = cur();
+  var titles = {
+    rate:   ['各规则完成率 Top 5', '按规则汇总其下全部任务的周期'],
+    count:  ['各任务打卡次数 Top 5', '统计区间内完成的周期数'],
+    detail: ['各任务完成周期 Top 5', '已完成 ÷ 应完成'],
+    streak: ['各任务最长连续 Top 5', '单任务连续打卡的自然日天数']
+  }[state.type];
+  $('topTitle').textContent = titles[0];
+  $('topSub').textContent = titles[1];
+
+  if(d.t.done === 0){
+    $('topBody').innerHTML = emptyHtml();
+    return;
+  }
+
+  var items;
+  if(state.type === 'rate'){
+    items = ruleStats(d.rows).sort(function(a, b){ return b.rate - a.rate || b.done - a.done; })
+      .slice(0, 5).map(function(o){
+        return { name:o.rule, ratio:o.rate, label:pct(o.rate) + '%' };
+      });
+  } else if(state.type === 'count'){
+    items = d.rows.slice().sort(function(a, b){ return b.done - a.done || b.exp - a.exp; })
+      .slice(0, 5).map(function(r){ return { name:r.task, raw:r.done, label:r.done + ' 次' }; });
+  } else if(state.type === 'detail'){
+    items = d.rows.slice().sort(function(a, b){
+        var ra = a.exp ? a.done / a.exp : 0, rb = b.exp ? b.done / b.exp : 0;
+        return rb - ra || b.done - a.done;
+      })
+      .slice(0, 5).map(function(r){ return { name:r.task, ratio:r.exp ? r.done / r.exp : 0, label:r.done + ' / ' + r.exp }; });
+  } else {
+    items = d.rows.slice().sort(function(a, b){ return b.streak - a.streak || b.done - a.done; })
+      .slice(0, 5).map(function(r){ return { name:r.task, raw:r.streak, label:r.streak + ' 天' }; });
+  }
+
+  var maxRaw = 1;
+  items.forEach(function(it){ if(it.raw > maxRaw) maxRaw = it.raw; });
+  items.forEach(function(it){
+    if(typeof it.ratio !== 'number') it.ratio = it.raw / maxRaw;
+  });
+
+  $('topBody').innerHTML = '<div class="hb-list">' + items.map(function(it, i){
+    var w = Math.max(it.ratio > 0 ? 3 : 0, it.ratio * 100);
+    return '<div class="hb' + (i === 0 ? ' top' : '') + '">'
+      + '<span class="hb-name" title="' + esc(it.name) + '">' + esc(it.name) + '</span>'
+      + '<span class="hb-track"><i style="width:' + w.toFixed(1) + '%"></i></span>'
+      + '<span class="hb-val">' + esc(it.label) + '</span>'
+      + '</div>';
+  }).join('') + '</div>'
+  + '<p class="card-foot">口径：一个周期只计一次，同一周内重复点击不会重复计数</p>';
+}
+
+/* ----------------------------------------------------------- 表格 */
+function sortRows(rows){
+  var key = state.sort.key, dir = state.sort.dir === 'asc' ? 1 : -1;
+  var copy = rows.slice();
+  copy.sort(function(a, b){
+    if(key === 'rule' || key === 'task'){
+      var r = a[key].localeCompare(b[key], 'zh-Hans-CN');
+      return (r || (b.done - a.done)) * dir;
+    }
+    var va, vb;
+    if(key === 'a'){ va = a.exp; vb = b.exp; }
+    else if(key === 'b'){ va = a.done; vb = b.done; }
+    else if(key === 'c'){ va = a.exp ? a.done / a.exp : 0; vb = b.exp ? b.done / b.exp : 0; }
+    else { va = a.lastRaw; vb = b.lastRaw; }
+    if(va === vb) return (b.done - a.done) * dir;
+    return (va - vb) * dir;
+  });
+  return copy;
+}
+
+function renderTable(){
+  var d = cur();
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tbl thead th'), function(th){
+    var k = th.getAttribute('data-key');
+    th.classList.remove('asc', 'desc', 'active');
+    if(k === state.sort.key){ th.classList.add(state.sort.dir); th.classList.add('active'); }
+    th.setAttribute('aria-sort', k === state.sort.key ? (state.sort.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+  });
+
+  $('tblSub').textContent = '点表头可切换排序 · 当前按「' + COL_NAME[state.sort.key] + '」'
+    + (state.sort.dir === 'asc' ? '升序' : '降序');
+  $('tblCount').textContent = d.t.done === 0 ? '暂无数据' : '共 ' + d.rows.length + ' 条任务';
+
+  if(d.t.done === 0){
+    $('tblBody').innerHTML = '<tr><td colspan="6" class="no-empty-pad">' + emptyHtml() + '</td></tr>';
+    return;
+  }
+
+  $('tblBody').innerHTML = sortRows(d.rows).map(function(r){
+    var rate = r.exp ? r.done / r.exp : 0;
+    var barCls = rate >= 0.8 ? '' : (rate >= 0.5 ? 'low' : 'zero');
+    var barW = rate > 0 ? Math.max(3, rate * 100) : 0;
+    var task = '<span class="task-cell"><em>' + esc(r.task) + '</em>'
+      + (state.type === 'streak' && r.streak > 0 ? '<span class="pill">连续 ' + r.streak + ' 天</span>' : '')
+      + (r.done === 0 ? '<span class="pill plain">未打卡</span>' : '')
+      + '</span>';
+    return '<tr>'
+      + '<td><span class="rule-cell"><i></i><span>' + esc(r.rule) + '</span></span></td>'
+      + '<td>' + task + '</td>'
+      + '<td>' + r.exp + '</td>'
+      + '<td>' + r.done + '</td>'
+      + '<td><span class="rate"><span class="rate-track"><i class="' + barCls
+        + '" style="width:' + barW.toFixed(1) + '%"></i></span><b>' + pct(rate) + '%</b></span></td>'
+      + '<td' + (r.lastRaw ? '' : ' class="mut"') + '>' + esc(r.last) + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+/* ----------------------------------------------------------- 头部 / 全量渲染 */
+function renderHead(){
+  var d = cur(), t = typeMeta(state.type);
+  $('mRange').textContent = d.fromText + ' – ' + d.toText;
+  $('mDays').textContent = '共 ' + d.t.totalDays + ' 天';
+  $('mLast').textContent = d.t.lastText ? '最近打卡 ' + d.t.lastText : '本区间暂无打卡';
+  $('subtitle').textContent = t.sub;
+  $('typeLabel').textContent = t.label;
+}
+
+function renderAll(){
+  renderHead();
+  renderKpis();
+  renderChart();
+  renderTop();
+  renderTable();
+}
+
+/* ----------------------------------------------------------- 交互绑定 */
+function bindRange(){
+  $('rangeSeg').innerHTML = RANGES.map(function(r){
+    return '<button type="button" data-range="' + r.id + '"'
+      + (r.id === state.range ? ' class="on"' : '') + '>' + r.label + '</button>';
+  }).join('');
+  $('rangeSeg').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-range]');
+    if(!btn) return;
+    state.range = btn.getAttribute('data-range');
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b === btn);
+    });
+    renderAll();
+  });
+}
+
+function bindType(){
+  var alpha = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"'
+    + ' stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+  $('typePanel').innerHTML = TYPES.map(function(t){
+    return '<button type="button" class="dd-item' + (t.id === state.type ? ' on' : '') + '"'
+      + ' role="option" aria-selected="' + (t.id === state.type) + '" data-type="' + t.id + '">'
+      + '<span>' + t.label + '</span>' + alpha + '</button>';
+  }).join('');
+
+  var dd = $('typeDd'), panel = $('typePanel'), btn = $('typeBtn');
+
+  function setOpen(open){
+    panel.hidden = !open;
+    dd.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+  }
+
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    setOpen(panel.hidden);
+  });
+
+  panel.addEventListener('click', function(e){
+    var item = e.target.closest('[data-type]');
+    if(!item) return;
+    e.stopPropagation();
+    state.type = item.getAttribute('data-type');
+    Array.prototype.forEach.call(panel.querySelectorAll('[data-type]'), function(b){
+      var on = b === item;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    setOpen(false);
+    renderAll();
+  });
+
+  document.addEventListener('click', function(){ if(!panel.hidden) setOpen(false); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !panel.hidden){ setOpen(false); btn.focus(); }
+  });
+}
+
+function bindSort(){
+  Array.prototype.forEach.call(document.querySelectorAll('.tbl thead th'), function(th){
+    th.setAttribute('tabindex', '0');
+    function apply(){
+      var k = th.getAttribute('data-key');
+      if(state.sort.key === k) state.sort.dir = state.sort.dir === 'desc' ? 'asc' : 'desc';
+      else state.sort = { key:k, dir:SORT_DEFAULT[k] };
+      renderTable();
+    }
+    th.addEventListener('click', apply);
+    th.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apply(); }
+    });
+  });
+}
+
+function bindTip(){
+  var tip = $('tip'), plot = $('plot'), active = null;
+  function place(e){
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = e.clientX + 14, y = e.clientY - h - 12;
+    if(x + w > window.innerWidth - 8) x = e.clientX - w - 14;
+    if(x < 8) x = 8;
+    if(y < 8) y = e.clientY + 18;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  plot.addEventListener('mousemove', function(e){
+    var bar = e.target.closest('.bar');
+    if(!bar){
+      if(active){ active = null; tip.classList.remove('show'); }
+      return;
+    }
+    if(bar !== active){
+      active = bar;
+      tip.textContent = bucketTip(+bar.getAttribute('data-i'));
+      tip.classList.add('show');
+    }
+    place(e);
+  });
+  plot.addEventListener('mouseleave', function(){
+    active = null;
+    tip.classList.remove('show');
+  });
+}
+
+function bindExport(){
+  var snack = $('snack'), timer = 0;
+  $('exportBtn').addEventListener('click', function(){
+    snack.textContent = '静态样例：导出尚未接入，正式版会按当前筛选条件导出 CSV';
+    snack.classList.add('show');
+    clearTimeout(timer);
+    timer = setTimeout(function(){ snack.classList.remove('show'); }, 2800);
+  });
+}
+
+bindRange();
+bindType();
+bindSort();
+bindTip();
+bindExport();
+renderAll();
+})();
+</script>
+</body>
+</html>

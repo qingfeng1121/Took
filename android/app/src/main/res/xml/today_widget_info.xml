@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「今日概览」组件的声明（定稿 §6.2.1 的 appwidget-provider 口径）。
+
+  updatePeriodMillis=1800000（30 分钟）：系统会按这个周期发 APPWIDGET_UPDATE，
+  但它是**下限约 30 分钟、且设备休眠时不触发**的低保证刷新；跨天那一次由
+  WidgetTickScheduler 在本地零点排一个 AlarmManager 一次性闹钟兜住（见该类注释）。
+  两条路都只重画组件，不联网、不启动 Activity。
+
+  minWidth/minHeight 用 1×1 的下限，resizeMode 双向可拉伸，实际密度由
+  TodayWidgetPlan.tierForSize 按 LocalSize 分三档（紧凑 1 行 / 标准 3 行 / 宽松 6 行）。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_today_description"
+    android:initialLayout="@layout/today_widget_loading"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:previewLayout="@layout/today_widget_preview"
+    android:previewImage="@drawable/widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 倒数日组件根的白底（与「今天」「月历」同色），深色卡贴在上面才有边界。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FFFFFF" />
+    <corners android:radius="18dp" />
+</shape>

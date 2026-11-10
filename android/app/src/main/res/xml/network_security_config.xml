@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 9（API 28）起默认 cleartextTrafficPermitted=false，http:// 一律被拒。
+  本应用的后端是**用户自填地址**的局域网自托管服务（默认 http://127.0.0.1:8420，
+  模拟器访问宿主机是 http://10.0.2.2:8420，真机是 192.168.x.x），
+  地址在运行时才知道，无法预先写成 <domain-config> 的白名单，因此在这里整体放行明文。
+
+  收窄手段（等真机部署定了再改）：
+  1. 若固定用一台 NAS，把下面的 base-config 换成 <domain>192.168.1.10</domain> 的 domain-config；
+  2. 若后端加上 TLS，直接删掉本文件里的 cleartextTrafficPermitted，届时 https 才被允许。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

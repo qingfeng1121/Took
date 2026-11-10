@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Took · 提醒</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #10141c; color: #f4f7fb;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 24px; text-align: center; user-select: none;
+  }
+  .time { font-size: 44px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .title { font-size: 22px; font-weight: 650; max-width: 100%; overflow-wrap: anywhere; }
+  .body { font-size: 14px; color: #a9b4c6; max-width: 100%; overflow-wrap: anywhere; }
+  .actions { display: flex; gap: 12px; margin-top: 8px; width: 100%; max-width: 380px; }
+  button {
+    flex: 1; min-height: 48px; border-radius: 12px; border: 1px solid #2b3547;
+    background: #1b2331; color: #e7edf7; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  button:hover { background: #232d3e; }
+  button.primary { background: #f0a53c; border-color: #f0a53c; color: #1b1408; }
+  button.primary:hover { background: #ffb857; }
+  .tip { font-size: 12px; color: #6c7891; }
+</style>
+</head>
+<body>
+  <div class="time" id="time">--:--</div>
+  <div class="title" id="title">提醒</div>
+  <div class="body" id="body"></div>
+  <div class="actions" id="actions"></div>
+  <div class="tip">响铃最长 5 分钟后自动停止</div>
+<script>
+  /* 闹钟窗（定稿 §6.3.5）：只做「贪睡 / 停止」两个动作。
+     参数由 scheduler.rs 拼进 URL（title/body/snooze 都已 encodeURIComponent），这里只解码展示。
+     两个按钮都真的走 Tauri 命令，且都会先停铃声 —— 不停只关窗口，用户会以为没关掉。 */
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var id = q.get('id') || '';
+    var title = q.get('title') || '提醒';
+    var body = q.get('body') || '';
+    var snooze = parseInt(q.get('snooze') || '0', 10) || 0;
+
+    var pad2 = function (n) { return n < 10 ? '0' + n : String(n); };
+    var now = new Date();
+    document.getElementById('time').textContent = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    document.getElementById('title').textContent = title;
+    document.getElementById('body').textContent = body;
+
+    var invoke = (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke)
+      ? window.__TAURI__.core.invoke
+      : function () { return Promise.reject(new Error('不在 Tauri 里')); };
+
+    function closeSelf() {
+      try {
+        if (window.__TAURI__ && window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow) {
+          window.__TAURI__.window.getCurrentWindow().close();
+        }
+      } catch (e) { /* 关不掉就让后台的 5 分钟超时兜底 */ }
+    }
+
+    function stop() {
+      invoke('stop_reminder', { reminderId: id }).catch(function () {}).then(closeSelf);
+    }
+    function doSnooze() {
+      invoke('snooze_reminder', { reminderId: id }).catch(function () {}).then(closeSelf);
+    }
+
+    var actions = document.getElementById('actions');
+    if (snooze > 0) {
+      var b1 = document.createElement('button');
+      b1.textContent = '稍后提醒 ' + snooze + ' 分钟';
+      b1.addEventListener('click', doSnooze);
+      actions.appendChild(b1);
+    }
+    var b2 = document.createElement('button');
+    b2.className = 'primary';
+    b2.textContent = '停止';
+    b2.addEventListener('click', stop);
+    actions.appendChild(b2);
+
+    // 只给「停止」快捷键：Esc 不应该在用户想贪睡时把闹钟关掉
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') stop();
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 倒数日组件首次加载/系统重启后的占位（Glance 会话起来前显示的就是它）。
+     刻意用深色卡的样子：占位与真内容视觉连续，不会闪一下白再变深。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/countdown_widget_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_countdown_loading"
+        android:textColor="#9AA3AE"
+        android:textSize="11sp" />
+</LinearLayout>

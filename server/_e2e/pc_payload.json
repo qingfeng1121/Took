@@ -1,0 +1,104 @@
+{
+  "rules": [
+    {
+      "id": "r_pc_work",
+      "title": "PC工作日常规",
+      "enabled": 1,
+      "repeat_mode": 0,
+      "weekdays_mask": 31,
+      "repeat_every": null,
+      "month_day": null,
+      "year_month": null,
+      "year_day": null,
+      "start_date": "2026-10-01",
+      "end_date": null,
+      "repeat_until": null,
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    },
+    {
+      "id": "r_pc_rent",
+      "title": "PC房租",
+      "enabled": 0,
+      "repeat_mode": 2,
+      "weekdays_mask": 0,
+      "repeat_every": null,
+      "month_day": 20,
+      "year_month": null,
+      "year_day": null,
+      "start_date": "2026-01-01",
+      "end_date": "2026-12-31",
+      "repeat_until": "2026-11-30",
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t_pc_fit",
+      "rule_id": "r_pc_work",
+      "title": "PC健身",
+      "enabled": 1,
+      "sort_order": 0,
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    }
+  ],
+  "memos": [
+    {
+      "id": "m_pc_note",
+      "kind": 0,
+      "title": "PC记事",
+      "content": null,
+      "start_date": null,
+      "end_date": null,
+      "category": null,
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    },
+    {
+      "id": "m_pc_countdown",
+      "kind": 1,
+      "title": "PC倒数日",
+      "content": "一百天",
+      "start_date": "2026-10-01",
+      "end_date": "2026-12-31",
+      "category": "生活",
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    }
+  ],
+  "reminders": [
+    {
+      "id": "rem_pc_1",
+      "owner_kind": 0,
+      "owner_id": "r_pc_work",
+      "notify_on": 1,
+      "alarm_on": 0,
+      "time_of_day": "21:00",
+      "notify_text": null,
+      "offset_days": 0,
+      "repeat_rule": 0,
+      "snooze_min": 0,
+      "enabled": 1,
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    }
+  ],
+  "completions": [
+    {
+      "task_id": "t_pc_fit",
+      "period_start": "2026-10-19",
+      "status": 1,
+      "rev": 0,
+      "updated_at": 1760000000123,
+      "deleted": 0
+    }
+  ]
+}

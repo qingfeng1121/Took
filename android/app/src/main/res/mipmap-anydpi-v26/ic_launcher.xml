@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 8.0（API 26）起的标准启动图标：背景纯色 + 前景矢量，由启动器自己裁形状。
+  本工程 minSdk=26，所以所有受支持设备都走这一份；mipmap-*dpi/ic_launcher.png
+  只是给不走自适应图标的系统界面（如部分 ROM 的通知栏大图、应用信息页）兜底。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

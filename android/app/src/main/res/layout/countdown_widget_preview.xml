@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 倒数日组件在「选择组件」里的预览（Android 12+ 的 previewLayout）：
+     白底 + 一张深色卡（标题 / 超大数字 / 点分日期），与真机上的形态一致。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/countdown_widget_card_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_countdown_preview_title"
+            android:textColor="#9AA3AE"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_countdown_preview_number"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_countdown_preview_date"
+            android:textColor="#9AA3AE"
+            android:textSize="11sp" />
+    </LinearLayout>
+</LinearLayout>

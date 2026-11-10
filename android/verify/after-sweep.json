@@ -1,0 +1,171 @@
+{
+ "home": {
+  "notes": "首页月历",
+  "issues": [],
+  "count": 287
+ },
+ "daypanel": {
+  "notes": "当天打卡面板（改造前=ModalBottomSheet）",
+  "issues": [
+   {
+    "kind": "OFFCENTER",
+    "label": "~背单词 打卡 未完成",
+    "box": [
+     125,
+     553,
+     1042,
+     909
+    ],
+    "w": 917,
+    "h": 356,
+    "dx": -0.144,
+    "dy": -0.014,
+    "click": false
+   },
+   {
+    "kind": "OFFCENTER",
+    "label": "单词打卡 · 周期 2026-10-24",
+    "box": [
+     252,
+     689,
+     841,
+     881
+    ],
+    "w": 589,
+    "h": 192,
+    "dx": -0.243,
+    "dy": -0.049,
+    "click": false
+   }
+  ],
+  "count": 17
+ },
+ "config": {
+  "notes": "配置页规则列表",
+  "issues": [
+   {
+    "kind": "OFFCENTER",
+    "label": "配置",
+    "box": [
+     50,
+     121,
+     721,
+     209
+    ],
+    "w": 671,
+    "h": 88,
+    "dx": -0.404,
+    "dy": 0.005,
+    "click": false
+   },
+   {
+    "kind": "OFFCENTER",
+    "label": "每年 3 月 15 日 · 自 2026-01-01",
+    "box": [
+     72,
+     505,
+     691,
+     697
+    ],
+    "w": 619,
+    "h": 192,
+    "dx": -0.237,
+    "dy": -0.054,
+    "click": false
+   }
+  ],
+  "count": 58
+ },
+ "config-memo": {
+  "notes": "配置页记事/倒数日/笔记本分组（空状态）",
+  "issues": [
+   {
+    "kind": "OFFCENTER",
+    "label": "配置",
+    "box": [
+     50,
+     121,
+     721,
+     209
+    ],
+    "w": 671,
+    "h": 88,
+    "dx": -0.404,
+    "dy": 0.005,
+    "click": false
+   },
+   {
+    "kind": "INVISIBLE",
+    "label": "每周一、二、三、四、五 · 自 2026-10-01",
+    "box": [
+     72,
+     225,
+     685,
+     247
+    ]
+   }
+  ],
+  "count": 46
+ },
+ "countdown": {
+  "notes": "倒数日表单",
+  "issues": [
+   {
+    "kind": "OFFCENTER",
+    "label": "配置",
+    "box": [
+     50,
+     121,
+     721,
+     209
+    ],
+    "w": 671,
+    "h": 88,
+    "dx": -0.404,
+    "dy": 0.005,
+    "click": false
+   },
+   {
+    "kind": "INVISIBLE",
+    "label": "每周一、二、三、四、五 · 自 2026-10-01",
+    "box": [
+     72,
+     225,
+     685,
+     247
+    ]
+   }
+  ],
+  "count": 46
+ },
+ "doc-note": {
+  "notes": "记事文档式页",
+  "issues": [],
+  "count": 21
+ },
+ "doc-book": {
+  "notes": "笔记本文档式页",
+  "issues": [],
+  "count": 8
+ },
+ "editor": {
+  "notes": "规则编辑页（顶部：名称/重复方式）",
+  "issues": [],
+  "count": 287
+ },
+ "editor-reminder": {
+  "notes": "规则编辑页（提醒区三按钮）",
+  "issues": [],
+  "count": 287
+ },
+ "settings": {
+  "notes": "设置页",
+  "issues": [],
+  "count": 51
+ },
+ "settings-2": {
+  "notes": "设置页下半（提醒权限/下一次提醒）",
+  "issues": [],
+  "count": 79
+ }
+}

@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 同步客户端要发 HTTP；Android 9+ 默认禁明文，明文放行见 res/xml/network_security_config.xml -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- ============ 提醒（定稿 §6.3.3 的权限清单） ============ -->
+
+    <!-- 发通知。Android 13+ 是运行时权限，用户拒了系统会静默丢通知，必须在 UI 上如实显示 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+      精确闹钟。Android 14 起默认关闭，必须应用内检测 canScheduleExactAlarms() 并跳
+      ACTION_REQUEST_SCHEDULE_EXACT_ALARM 引导。这里刻意**不声明** USE_EXACT_ALARM：
+      USE_EXACT_ALARM 会无条件授予，等于把这个开关藏起来——用户就再也看不到「未授权」，
+      也失去了如实告知的能力。走 Google Play 的真闹钟类应用才需要换那个更严的权限。
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Android 14+ 全屏闹钟靠它；缺失时闹钟退化成高优先级通知（设置页会显示未授权） -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- 重启后重建闹钟：普通权限，但 BOOT_COMPLETED 必须自己处理，AlarmManager 不会自动恢复 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+      **必需**：AlarmClock.ACTION_SET_ALARM 的发送方权限。不声明它，startActivity 会被
+      AMS 直接拒绝：Permission Denial: ... requires com.android.alarm.permission.SET_ALARM。
+      实测（小米 13 / Android 15）：缺这条时 resolveActivity 能成功（所以 clockAppAvailable
+      为 true 看着正常），但 startActivity 抛 SecurityException → 退回应用自绘响铃。
+      这个组合「能解析但不能启动」会让人误判成包可见性问题，实际是权限问题。
+    -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
+    <!--
+      Android 11+（API 30）的包可见性：不声明 <queries>，packageManager.resolveActivity()
+      对时钟 App 会返回 null，SystemClockAlarm.clockAppAvailable() 于是恒为 false，
+      「闹钟交给系统时钟」这条路永远走不到，全部退回应用自绘的 AlarmRingActivity。
+      实测证据（小米 13 / Android 15）：加这一段之前 system_alarm 表恒为空、
+      系统时钟 App 里没有 [Took] 闹钟；加上之后才有。这不是可选优化，是必需声明。
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
+        </intent>
+        <!-- 打开系统闹钟列表用；缺了它 SHOW_ALARMS 也解析不到 -->
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS" />
+        </intent>
+    </queries>
+
+    <!--
+      启动图标 = 自适应图标（res/mipmap-anydpi-v26/ic_launcher.xml）：
+      深色底 #1F2329 + 橙色圆环 #F97316 + 中心白点，配色取自 App 内倒数日深色卡与主色。
+      roundIcon 单独指一份：部分 ROM（含 MIUI）在圆形遮罩模式下会优先读它，
+      不声明时这些机型会退回系统默认机器人图标。
+      mipmap-*dpi/ic_launcher.png 是不支持自适应图标的老系统界面（通知栏大图等）的兜底。
+    -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Tool"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Took">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Took">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          全屏闹钟。singleTask：同一时刻只有一屏，多个闹钟撞在同一分钟时不会叠两个界面
+          （定稿 §6.3.5 的「单例队列」）；excludeFromRecents 让它不出现在最近任务里；
+          showWhenLocked / turnScreenOn 让锁屏上直接弹出来。
+        -->
+        <activity
+            android:name=".alarm.AlarmRingActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Took"
+            android:turnScreenOn="true" />
+
+        <!-- 闹钟到点 / 通知上的贪睡与停止；只接受应用内显式 Intent，不导出 -->
+        <receiver
+            android:name=".alarm.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- 重启、覆盖安装、改时间、换时区：四条都接，否则闹钟静默消失 -->
+        <receiver
+            android:name=".alarm.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+          ============ 桌面小组件「今日概览」 ============
+
+          导出必须为 true：桌面（Launcher）是**另一个进程**，它要 bind 到
+          android.appwidget.action.APPWIDGET_UPDATE 广播上，不导出组件就不会出现在
+          「选择组件」列表里（Android 12+ 由系统代理，但本工程 minSdk 26，仍按经典声明写）。
+        -->
+        <receiver
+            android:name=".widget.TodayWidgetReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_today_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_widget_info" />
+        </receiver>
+
+        <!-- 从应用内发起「把组件放到桌面」：走系统的 requestPinAppWidget 确认框，不偷偷改桌面 -->
+        <activity
+            android:name=".widget.WidgetPinActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.Took">
+            <intent-filter>
+                <action android:name="app.took.action.PIN_WIDGET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          ============ 桌面小组件「月历」 ============
+
+          与「今天」是**两个独立组件**：各自的 receiver、appwidget-info、sizeMode，
+          因此可以同时放在桌面上（互不覆盖对方的尺寸档与重画时机）。
+          导出为 true 的理由同「今天」：桌面是另一个进程，要 bind 到 APPWIDGET_UPDATE。
+        -->
+        <receiver
+            android:name=".homewidget.MonthWidgetReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_month_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/month_widget_info" />
+        </receiver>
+
+        <!--
+          从应用内发起「把月历放到桌面」：系统 requestPinAppWidget 确认框。
+          独立 action，不影响既有的 PIN_WIDGET（那是「今天」）。
+        -->
+        <activity
+            android:name=".homewidget.MonthWidgetPinActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.Took">
+            <intent-filter>
+                <action android:name="app.took.action.PIN_MONTH_WIDGET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          ============ 桌面小组件「倒数日」 ============
+
+          第三个 Glance 组件，与「今天」「月历」并列且互相独立：各自的 receiver、
+          appwidget-info、sizeMode，因此三个可以同时放在桌面上，互不覆盖。
+          导出为 true 的理由同前两个：桌面是另一个进程，要 bind 到 APPWIDGET_UPDATE，
+          不导出就不会出现在系统的「小部件」列表里（= 拖不到桌面）。
+        -->
+        <receiver
+            android:name=".countdownwidget.CountdownWidgetReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_countdown_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_info" />
+        </receiver>
+
+        <!--
+          「这个组件显示哪一条倒数日」的选择页 = 系统 appwidget 的 configure activity
+          （countdown_widget_info.xml 的 android:configure 指向它）。
+
+          必须 exported=true：桌面（Launcher）在另一个进程里启动它。
+          必须 **不** 加 launchMode=singleTask / 不加 intent-filter：系统按
+          EXTRA_APPWIDGET_ID 传实例 id，同一个 Activity 要为不同实例各开一次，
+          singleTask 会让第二个实例的配置复用第一个的页面。
+
+          长按组件 → 重新配置 也走这里（系统用同一个 Activity 重新拉起）。
+        -->
+        <activity
+            android:name=".countdownwidget.CountdownWidgetConfigActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.Took" />
+
+        <!--
+          从应用内发起「把倒数日放到桌面」：系统 requestPinAppWidget 确认框。
+          独立 action，不影响既有的 PIN_WIDGET（今天）与 PIN_MONTH_WIDGET（月历）。
+        -->
+        <activity
+            android:name=".countdownwidget.CountdownWidgetPinActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.Took">
+            <intent-filter>
+                <action android:name="app.took.action.PIN_COUNTDOWN_WIDGET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- 零点 / 重启 / 覆盖安装 / 改时间 / 换时区 → 重画组件（本地零点闹钟见 WidgetTickScheduler） -->
+        <receiver
+            android:name=".widget.WidgetTickReceiver"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+
+</manifest>
